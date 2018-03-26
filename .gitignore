@@ -2,3 +2,4 @@
 .RData
 .Rhistory
 .Rbuildignore
+inst/doc
