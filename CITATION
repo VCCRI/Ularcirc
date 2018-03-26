@@ -1,0 +1,16 @@
+citEntry(entry="article",
+         title = "Ularcirc",
+         author = personList(
+             as.person("David T Humphreys"),
+             as.person("Nicolas Fossat"),
+             as.person("Patrick Tam"),
+             as.person("Joshua Ho")),
+         journal = "bioRxiv",
+         year = "2018",
+         doi = "",
+         publisher = "Cold Spring Harbor Labs Journals",
+         url = "http://biorxiv.org/content/early/2018",
+         textVersion = paste("David T Humphreys, Nicolas Fossat, Patrick Tam, Joshua Ho.",
+                             "Machine-learning annotation of human splicing branchpoints.",
+                             "bioRxiv (2018).",
+                             "http://dx.doi.org/"))

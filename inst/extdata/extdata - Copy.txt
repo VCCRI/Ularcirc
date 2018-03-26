@@ -1,0 +1,2 @@
+# This file points to a data directory
+DataPath = U:/scripts/VCCRI_git/scripts/RStuff/Shiny/circRNA/data
