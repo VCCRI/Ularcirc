@@ -1,16 +1,16 @@
-\contentsline {section}{\numberline {1}Overview}{2}{section.1}
-\contentsline {section}{\numberline {2}Preparing input data sets}{3}{section.2}
-\contentsline {subsection}{\numberline {2.1}Splice junction files}{3}{subsection.2.1}
-\contentsline {subsection}{\numberline {2.2}Annotation databases}{4}{subsection.2.2}
+\contentsline {section}{\numberline {1}Overview}{1}{section.1}
+\contentsline {section}{\numberline {2}Preparing input data sets}{2}{section.2}
+\contentsline {subsection}{\numberline {2.1}Splice junction files}{2}{subsection.2.1}
+\contentsline {subsection}{\numberline {2.2}Annotation databases}{3}{subsection.2.2}
 \contentsline {section}{\numberline {3}Workflow}{4}{section.3}
-\contentsline {subsection}{\numberline {3.1}Step 1a: Loading annotation data}{5}{subsection.3.1}
-\contentsline {subsection}{\numberline {3.2}Step 1b: Setting filters}{5}{subsection.3.2}
-\contentsline {subsection}{\numberline {3.3}Step 1c: Loading new data sets}{6}{subsection.3.3}
-\contentsline {subsection}{\numberline {3.4}Step 2a: Saving/loading a project and grouping samples}{7}{subsection.3.4}
-\contentsline {subsection}{\numberline {3.5}Step 2b: Grouping samples}{8}{subsection.3.5}
-\contentsline {subsection}{\numberline {3.6}Step 3a : Generating BSJ counts}{8}{subsection.3.6}
-\contentsline {subsection}{\numberline {3.7}Step 3b : Visualising gene splicing patterns}{9}{subsection.3.7}
-\contentsline {subsection}{\numberline {3.8}Step 4 : Exploring slicing patterns from any genomic region}{10}{subsection.3.8}
-\contentsline {subsection}{\numberline {3.9}Step 5: Sequence analysis of splice\/backsplice junctions}{10}{subsection.3.9}
-\contentsline {section}{\numberline {4}Session Information}{10}{section.4}
+\contentsline {subsection}{\numberline {3.1}Step 1a: Loading annotation data}{4}{subsection.3.1}
+\contentsline {subsection}{\numberline {3.2}Step 1b: Setting filters}{4}{subsection.3.2}
+\contentsline {subsection}{\numberline {3.3}Step 1c: Loading new data sets}{5}{subsection.3.3}
+\contentsline {subsection}{\numberline {3.4}Step 2a: Saving/loading a project and grouping samples}{6}{subsection.3.4}
+\contentsline {subsection}{\numberline {3.5}Step 2b: Grouping samples}{7}{subsection.3.5}
+\contentsline {subsection}{\numberline {3.6}Step 3a : Generating BSJ counts}{7}{subsection.3.6}
+\contentsline {subsection}{\numberline {3.7}Step 3b : Visualising gene splicing patterns}{8}{subsection.3.7}
+\contentsline {subsection}{\numberline {3.8}Step 4 : Exploring slicing patterns from any genomic region}{9}{subsection.3.8}
+\contentsline {subsection}{\numberline {3.9}Step 5: Sequence analysis of splice\/backsplice junctions}{9}{subsection.3.9}
+\contentsline {section}{\numberline {4}Session Information}{9}{section.4}
 \contentsline {section}{\numberline {5}Legal}{11}{section.5}

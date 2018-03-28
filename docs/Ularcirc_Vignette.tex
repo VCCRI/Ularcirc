@@ -3,7 +3,57 @@
 %\VignetteEngine{knitr::knitr_notangle}
 
 
-\documentclass[12pt]{article}
+\documentclass[12pt]{article}\usepackage[]{graphicx}\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+\let\hlipl\hlkwb
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
 
 \usepackage{multirow}
 \usepackage{mdframed}
@@ -18,9 +68,7 @@
 Victor Chang Cardiac Research Institute\\
 University of New South Wales
 }
-
-
-\usepackage{Sweave}
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
 \begin{document}
 
 \maketitle
@@ -29,6 +77,7 @@ University of New South Wales
 \begin{center}
 \textbf{Ularcirc v}0.1.0
 \end{center}
+@
 
 \tableofcontents
 
@@ -220,29 +269,91 @@ Description of this section will be populated soon.
 
 The session information records the versions of all the packages used in the generation of the present document.
 
-\begin{Schunk}
-\begin{Sinput}
-> sessionInfo()
-\end{Sinput}
-\begin{Soutput}
-R version 3.4.3 (2017-11-30)
-Platform: x86_64-w64-mingw32/x64 (64-bit)
-Running under: Windows 10 x64 (build 16299)
-
-Matrix products: default
-
-locale:
-[1] LC_COLLATE=English_Australia.1252  LC_CTYPE=English_Australia.1252   
-[3] LC_MONETARY=English_Australia.1252 LC_NUMERIC=C                      
-[5] LC_TIME=English_Australia.1252    
-
-attached base packages:
-[1] stats     graphics  grDevices utils     datasets  methods   base     
-
-loaded via a namespace (and not attached):
-[1] compiler_3.4.3 tools_3.4.3   
-\end{Soutput}
-\end{Schunk}
+\begin{knitrout}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{sessionInfo}\hlstd{()}
+\end{alltt}
+\begin{verbatim}
+## R version 3.4.3 (2017-11-30)
+## Platform: x86_64-w64-mingw32/x64 (64-bit)
+## Running under: Windows >= 8 x64 (build 9200)
+## 
+## Matrix products: default
+## 
+## locale:
+## [1] LC_COLLATE=English_Australia.1252  LC_CTYPE=English_Australia.1252   
+## [3] LC_MONETARY=English_Australia.1252 LC_NUMERIC=C                      
+## [5] LC_TIME=English_Australia.1252    
+## 
+## attached base packages:
+## [1] stats4    parallel  stats     graphics  grDevices utils     datasets 
+## [8] methods   base     
+## 
+## other attached packages:
+##  [1] org.Mm.eg.db_3.5.0                      
+##  [2] TxDb.Mmusculus.UCSC.mm10.knownGene_3.4.0
+##  [3] BSgenome.Mmusculus.UCSC.mm10_1.4.0      
+##  [4] org.Hs.eg.db_3.5.0                      
+##  [5] TxDb.Hsapiens.UCSC.hg38.knownGene_3.4.0 
+##  [6] BSgenome.Hsapiens.UCSC.hg38_1.4.1       
+##  [7] BSgenome_1.46.0                         
+##  [8] rtracklayer_1.38.3                      
+##  [9] moments_0.14                            
+## [10] GenomicFeatures_1.30.3                  
+## [11] AnnotationDbi_1.40.0                    
+## [12] Biobase_2.38.0                          
+## [13] GenomicRanges_1.30.0                    
+## [14] GenomeInfoDb_1.14.0                     
+## [15] Biostrings_2.46.0                       
+## [16] XVector_0.18.0                          
+## [17] IRanges_2.12.0                          
+## [18] S4Vectors_0.16.0                        
+## [19] BiocGenerics_0.24.0                     
+## [20] gsubfn_0.6-6                            
+## [21] proto_1.0.0                             
+## [22] DT_0.4                                  
+## [23] shinyFiles_0.6.2                        
+## [24] data.table_1.10.4-3                     
+## [25] Sushi_1.16.0                            
+## [26] biomaRt_2.34.2                          
+## [27] zoo_1.8-1                               
+## [28] shiny_1.0.5                             
+## 
+## loaded via a namespace (and not attached):
+##  [1] httr_1.3.1                    RMySQL_0.10.13               
+##  [3] bit64_0.9-7                   jsonlite_1.5                 
+##  [5] AnnotationHub_2.10.1          assertthat_0.2.0             
+##  [7] interactiveDisplayBase_1.16.0 highr_0.6                    
+##  [9] blob_1.1.0                    GenomeInfoDbData_1.0.0       
+## [11] Rsamtools_1.30.0              yaml_2.1.18                  
+## [13] progress_1.1.2                backports_1.1.2              
+## [15] pillar_1.1.0                  RSQLite_2.0                  
+## [17] lattice_0.20-35               digest_0.6.15                
+## [19] htmltools_0.3.6               httpuv_1.3.5                 
+## [21] Matrix_1.2-12                 XML_3.98-1.9                 
+## [23] pkgconfig_2.0.1               devtools_1.13.5              
+## [25] Ularcirc_0.1.0                zlibbioc_1.24.0              
+## [27] xtable_1.8-2                  BiocParallel_1.12.0          
+## [29] tibble_1.4.2                  withr_2.1.1                  
+## [31] SummarizedExperiment_1.8.1    RJSONIO_1.3-0                
+## [33] magrittr_1.5                  mime_0.5                     
+## [35] evaluate_0.10.1               memoise_1.1.0                
+## [37] BiocInstaller_1.28.0          tools_3.4.3                  
+## [39] prettyunits_1.0.2             matrixStats_0.53.1           
+## [41] stringr_1.3.0                 DelayedArray_0.4.1           
+## [43] compiler_3.4.3                rlang_0.2.0                  
+## [45] grid_3.4.3                    RCurl_1.95-4.10              
+## [47] rstudioapi_0.7                htmlwidgets_1.0              
+## [49] crosstalk_1.0.0               rmarkdown_1.8                
+## [51] bitops_1.0-6                  tcltk_3.4.3                  
+## [53] DBI_0.7                       R6_2.2.2                     
+## [55] GenomicAlignments_1.14.1      knitr_1.19                   
+## [57] bit_1.1-12                    rprojroot_1.3-2              
+## [59] stringi_1.1.6                 Rcpp_0.12.15
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
 
 %--------------------------------------------------------------------------------
 %--------------------------------------------------------------------------------
@@ -259,6 +370,6 @@ be obtained by using this software or data.  NHGRI and the U.S.
 Government disclaims all warranties as to performance,
 merchantability or fitness for any particular purpose.
 
-\input{Ularcirc_Vignette-concordance}
+\SweaveOpts{concordance=TRUE}
 
 \end{document}

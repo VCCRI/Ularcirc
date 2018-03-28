@@ -28,7 +28,6 @@ University of New South Wales
 \begin{center}
 \textbf{Ularcirc v}\Sexpr{packageVersion("Ularcirc")}
 \end{center}
-@
 
 \tableofcontents
 
@@ -239,6 +238,13 @@ be obtained by using this software or data.  NHGRI and the U.S.
 Government disclaims all warranties as to performance,
 merchantability or fitness for any particular purpose.
 
-\SweaveOpts{concordance=TRUE}
+
+<<include=FALSE>>=
+library(knitr)
+opts_chunk$set(
+concordance=TRUE
+)
+@
+
 
 \end{document}

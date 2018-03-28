@@ -3,9 +3,12 @@
 #' When the function is invoked the Ularcirc shiny app is started. The starting screen has quickstart instructions on how to use the software.
 #' Please refer to the Ularcirc vignette for a more detailed workflow.
 #' @return
+#' Does not return anything
 #' @examples
-#' # The following line will load the shiny app either through an RStudio session or
+#' \donttest{}
+#' # The following commands will load the shiny app either through an RStudio session or
 #' # through your internet browser
+#' library("Ularcirc")
 #' Ularcirc()
 #' @export
 Ularcirc <- function()
@@ -30,7 +33,10 @@ Ularcirc <- function()
 #' This function requires connection to the internet.
 #' @return Returns a list of installation commands for all compatible annotation databases
 #' @examples
+#' \donttest{}
 #' # Get all bioconductor annotation databases that are compatible with Ularcirc
+#' library('BSgenome')
+#' library('AnnotationHub')
 #' all_dbs <- Compatible_Annotation_DBs()
 #'
 #' # List database IDs

@@ -18,7 +18,7 @@ This function requires connection to the internet.
 }
 \examples{
 # Get all bioconductor annotation databases that are compatible with Ularcirc
-all_dbs <- Bioconductor_Compatible_Annotation_DBs()
+all_dbs <- Compatible_Annotation_DBs()
 
 # List database IDs
 names(all_dbs)
