@@ -48,17 +48,17 @@ Ularcirc <- function()
 #' @export
 Compatible_Annotation_DBs <- function()
 {
- ah <- AnnotationHub()
- all_OrgDb <- query(ah,"OrgDb")
- Bioconductor_Orgs <- gsub(pattern = ".sqlite", replacement = "",x = all_OrgDb$title[grep(pattern = "db", x = all_OrgDb$title)])
+  ah <- AnnotationHub::AnnotationHub()
+  all_OrgDb <- AnnotationHub::query(ah,"OrgDb")
+  Bioconductor_Orgs <- gsub(pattern = ".sqlite", replacement = "",x = all_OrgDb$title[grep(pattern = "db", x = all_OrgDb$title)])
 
- all_TxDb <- query(ah,"TxDb")
- Bioconductor_TxDbs <- gsub(pattern = ".sqlite", replacement = "" ,x = all_TxDb$title[grep(pattern = "UCSC", x = all_TxDb$title)])
- TxDb_Names <- gsub(pattern = "TxDb\\.",replacement = "",x = Bioconductor_TxDbs)
- #all_TxDb$description[grep(pattern = "UCSC", x = all_TxDb$title)]
+  all_TxDb <- AnnotationHub::query(ah,"TxDb")
+  Bioconductor_TxDbs <- gsub(pattern = ".sqlite", replacement = "" ,x = all_TxDb$title[grep(pattern = "UCSC", x = all_TxDb$title)])
+  TxDb_Names <- gsub(pattern = "TxDb\\.",replacement = "",x = Bioconductor_TxDbs)
+  #all_TxDb$description[grep(pattern = "UCSC", x = all_TxDb$title)]
 
- Bioconductor_Genomes <- available.genomes(splitNameParts=FALSE, type=getOption("pkgType"))
- BSgenome_Names <- gsub(pattern = "BSgenome.",replacement = "",x = Bioconductor_Genomes)
+  Bioconductor_Genomes <- BSgenome::available.genomes(splitNameParts=FALSE, type=getOption("pkgType"))
+  BSgenome_Names <- gsub(pattern = "BSgenome.",replacement = "",x = Bioconductor_Genomes)
 
   GenomeOptions <- {}
   TxDbOptions <- list()
@@ -75,11 +75,11 @@ Compatible_Annotation_DBs <- function()
     TxDb_idx <- grep(pattern = BSgenome_Names[i],x = TxDb_Names)
     if ((length(TxDb_idx) > 0) && (length(Org_idx) > 0))
     {   Genome_and_TxDb_idx <- Genome_and_TxDb_idx + 1
-        GenomeOptions <-   c(GenomeOptions, BSgenome_Names[i])                # Record entry to display as an option for the user.
-        TxDbOptions[[Genome_and_TxDb_idx]]  <- unique(TxDb_Names[TxDb_idx])   #  Record TxDb entries for this genome
-        names(TxDbOptions)[Genome_and_TxDb_idx] <-  BSgenome_Names[i]
-        Org_Annot_Options <- c(Org_Annot_Options, Bioconductor_Orgs[Org_idx])
-        Available_Organisms <- c(Available_Organisms, Org_Name)
+    GenomeOptions <-   c(GenomeOptions, BSgenome_Names[i])                # Record entry to display as an option for the user.
+    TxDbOptions[[Genome_and_TxDb_idx]]  <- unique(TxDb_Names[TxDb_idx])   #  Record TxDb entries for this genome
+    names(TxDbOptions)[Genome_and_TxDb_idx] <-  BSgenome_Names[i]
+    Org_Annot_Options <- c(Org_Annot_Options, Bioconductor_Orgs[Org_idx])
+    Available_Organisms <- c(Available_Organisms, Org_Name)
     }
   }
 
@@ -89,11 +89,11 @@ Compatible_Annotation_DBs <- function()
   download_commands <- list()
   for(i in 1: length(Available_Organisms))
   { download_commands[[i]] <- paste('biocLite("', Org_Annot_Options[[i]],'") # this downloads organism annotations',sep = "")
-    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
-                                    GenomeOptions[[i]],'") # this downloads organism genome',sep = ""))
-    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
-                                    TxDbOptions[[i]],'")  # This downloads a transcript database',sep=""))
-    download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
+  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
+                                                            GenomeOptions[[i]],'") # this downloads organism genome',sep = ""))
+  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
+                                                            TxDbOptions[[i]],'")  # This downloads a transcript database',sep=""))
+  download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
   }
   names(download_commands) <- names(TxDbOptions)
 

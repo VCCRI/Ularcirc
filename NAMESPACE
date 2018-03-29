@@ -1,3 +1,2 @@
-exportPattern("^[[:alpha:]]+")
 export(Ularcirc)
-
+export(Compatible_Annotation_DBs)
