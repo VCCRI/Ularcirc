@@ -1,8 +1,3 @@
-## source("u:/scripts/VCCRI_git/scripts/RStuff/Shiny/circRNA/Global.R")   ## To debug
-
-
-
-
 
 ####################################3
 ##  List_Genomes
