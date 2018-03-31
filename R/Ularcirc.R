@@ -5,7 +5,6 @@
 #' @return
 #' Does not return anything
 #' @examples
-#' \donttest{}
 #' # The following commands will load the shiny app either through an RStudio session or
 #' # through your internet browser
 #' library("Ularcirc")
@@ -18,8 +17,6 @@ Ularcirc <- function()
   if (appDir == "") {
     stop("Could not find example directory. Try re-installing `Ularcirc`.", call. = FALSE)
   }
-
-
   shiny::runApp(appDir, display.mode="normal")
 
 }
@@ -33,9 +30,9 @@ Ularcirc <- function()
 #' This function requires connection to the internet.
 #' @return Returns a list of installation commands for all compatible annotation databases
 #' @examples
-#' \donttest{}
 #' # Get all bioconductor annotation databases that are compatible with Ularcirc
 #' library('BSgenome')
+#' library('httpuv')
 #' library('AnnotationHub')
 #' all_dbs <- Compatible_Annotation_DBs()
 #'
@@ -44,7 +41,7 @@ Ularcirc <- function()
 #'
 #' # Select a database and display the commands needed to install
 #' # Use noquote to correctly format output
-#' noquote(all_dbs[['Hsapiens.UCSC.hg38']])
+#' \donttest{noquote(all_dbs$Hsapiens.UCSC.hg38) }
 #' @export
 Compatible_Annotation_DBs <- function()
 {
@@ -58,7 +55,7 @@ Compatible_Annotation_DBs <- function()
   #all_TxDb$description[grep(pattern = "UCSC", x = all_TxDb$title)]
 
   Bioconductor_Genomes <- BSgenome::available.genomes(splitNameParts=FALSE, type=getOption("pkgType"))
-  BSgenome_Names <- gsub(pattern = "BSgenome.",replacement = "",x = Bioconductor_Genomes)
+  BSgenome_Names <- gsub(pattern = "BSgenome.", replacement = "", x = Bioconductor_Genomes)
 
   GenomeOptions <- {}
   TxDbOptions <- list()
@@ -74,12 +71,12 @@ Compatible_Annotation_DBs <- function()
     Org_idx <- grep(pattern= paste("org\\.",Species_code,"\\.",sep=""),x=Bioconductor_Orgs) # USed to test for genome annotation
     TxDb_idx <- grep(pattern = BSgenome_Names[i],x = TxDb_Names)
     if ((length(TxDb_idx) > 0) && (length(Org_idx) > 0))
-    {   Genome_and_TxDb_idx <- Genome_and_TxDb_idx + 1
-    GenomeOptions <-   c(GenomeOptions, BSgenome_Names[i])                # Record entry to display as an option for the user.
-    TxDbOptions[[Genome_and_TxDb_idx]]  <- unique(TxDb_Names[TxDb_idx])   #  Record TxDb entries for this genome
-    names(TxDbOptions)[Genome_and_TxDb_idx] <-  BSgenome_Names[i]
-    Org_Annot_Options <- c(Org_Annot_Options, Bioconductor_Orgs[Org_idx])
-    Available_Organisms <- c(Available_Organisms, Org_Name)
+    { Genome_and_TxDb_idx <- Genome_and_TxDb_idx + 1
+      GenomeOptions <-   c(GenomeOptions, BSgenome_Names[i])                # Record entry to display as an option for the user.
+      TxDbOptions[[Genome_and_TxDb_idx]]  <- unique(TxDb_Names[TxDb_idx])   #  Record TxDb entries for this genome
+      names(TxDbOptions)[Genome_and_TxDb_idx] <-  BSgenome_Names[i]
+      Org_Annot_Options <- c(Org_Annot_Options, Bioconductor_Orgs[Org_idx])
+      Available_Organisms <- c(Available_Organisms, Org_Name)
     }
   }
 
@@ -89,11 +86,11 @@ Compatible_Annotation_DBs <- function()
   download_commands <- list()
   for(i in 1: length(Available_Organisms))
   { download_commands[[i]] <- paste('biocLite("', Org_Annot_Options[[i]],'") # this downloads organism annotations',sep = "")
-  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
+    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
                                                             GenomeOptions[[i]],'") # this downloads organism genome',sep = ""))
-  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
+    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
                                                             TxDbOptions[[i]],'")  # This downloads a transcript database',sep=""))
-  download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
+    download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
   }
   names(download_commands) <- names(TxDbOptions)
 

@@ -14,7 +14,6 @@ When the function is invoked the Ularcirc shiny app is started. The starting scr
 Please refer to the Ularcirc vignette for a more detailed workflow.
 }
 \examples{
-\donttest{}
 # The following commands will load the shiny app either through an RStudio session or
 # through your internet browser
 library("Ularcirc")

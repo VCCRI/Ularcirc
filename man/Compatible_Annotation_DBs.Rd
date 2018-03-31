@@ -18,6 +18,9 @@ This function requires connection to the internet.
 }
 \examples{
 # Get all bioconductor annotation databases that are compatible with Ularcirc
+library('BSgenome')
+library('httpuv')
+library('AnnotationHub')
 all_dbs <- Compatible_Annotation_DBs()
 
 # List database IDs
@@ -25,5 +28,5 @@ names(all_dbs)
 
 # Select a database and display the commands needed to install
 # Use noquote to correctly format output
-noquote(all_dbs[['Hsapiens.UCSC.hg38']])
+\donttest{noquote(all_dbs$Hsapiens.UCSC.hg38) }
 }
