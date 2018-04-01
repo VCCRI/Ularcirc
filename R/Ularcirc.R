@@ -31,7 +31,7 @@ Ularcirc <- function()
 #' @return Returns a list of installation commands for all compatible annotation databases
 #' @examples
 #' # Get all bioconductor annotation databases that are compatible with Ularcirc
-#' library('BSgenome')
+#' \donttest{ library('BSgenome')
 #' library('httpuv')
 #' library('AnnotationHub')
 #' all_dbs <- Compatible_Annotation_DBs()
@@ -41,7 +41,7 @@ Ularcirc <- function()
 #'
 #' # Select a database and display the commands needed to install
 #' # Use noquote to correctly format output
-#' \donttest{noquote(all_dbs$Hsapiens.UCSC.hg38) }
+#' noquote(all_dbs$Hsapiens.UCSC.hg38) }
 #' @export
 Compatible_Annotation_DBs <- function()
 {
