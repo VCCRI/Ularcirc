@@ -7,9 +7,10 @@
 #' @examples
 #' # The following commands will load the shiny app either through an RStudio session or
 #' # through your internet browser
-#'
+#' \donttest{
 #' library("Ularcirc")
-#' \donttest{Ularcirc() }
+#' Ularcirc()
+#' }
 #'
 #' @export
 Ularcirc <- function()

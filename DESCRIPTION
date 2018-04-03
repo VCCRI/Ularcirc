@@ -1,7 +1,7 @@
 Package: Ularcirc
 Type: Package
 Title: Shiny app for canonical and back splicing analysis (i.e. circular and mRNA analysis)
-Version: 0.99.9
+Version: 0.99.10
 Author: David Humphreys
 Maintainer: David Humphreys <d.humphreys@victorchang.edu.au>
 Description: Ularcirc reads in STAR aligned splice junction files and provides visualisation and 
@@ -9,12 +9,12 @@ Description: Ularcirc reads in STAR aligned splice junction files and provides v
     canonical junctions.
 biocViews: DataRepresentation,Visualization, Genetics, Sequencing, Annotation, Coverage, 
     AlternativeSplicing, DifferentialSplicing
-License: GPL
+License: file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 3.1.0)
+Depends: R (>= 3.4.0)
 Imports: data.table (>= 1.9.4), shiny, gsubfn, Biostrings, GenomicFeatures, GenomeInfoDb, GenomeInfoDbData,
-    Sushi, moments, DT, yaml, AnnotationHub, BSgenome
+    Sushi, moments, DT, yaml, AnnotationHub, BSgenome, httpuv
 RoxygenNote: 6.0.1
 Suggests: knitr,
     rmarkdown
