@@ -7,9 +7,9 @@
 #' @examples
 #' # The following commands will load the shiny app either through an RStudio session or
 #' # through your internet browser
-#' \donttest{
+#' \dontrun{
 #' library("Ularcirc")
-#' # To start the web app just type:  Ularcirc()
+#' Ularcirc()
 #' }
 #' @export
 Ularcirc <- function()
@@ -33,7 +33,7 @@ Ularcirc <- function()
 #' @return Returns a list of installation commands for all compatible annotation databases
 #' @examples
 #' # Get all bioconductor annotation databases that are compatible with Ularcirc
-#' \donttest{ library('BSgenome')
+#' library('BSgenome')
 #' library('httpuv')
 #' library('AnnotationHub')
 #' all_dbs <- Compatible_Annotation_DBs()
@@ -43,7 +43,7 @@ Ularcirc <- function()
 #'
 #' # Select a database and display the commands needed to install
 #' # Use noquote to correctly format output
-#' noquote(all_dbs$Hsapiens.UCSC.hg38) }
+#' \donttest{ noquote(all_dbs$Hsapiens.UCSC.hg38) }
 #' @export
 Compatible_Annotation_DBs <- function()
 {

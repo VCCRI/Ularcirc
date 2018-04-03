@@ -91,10 +91,10 @@ knitr::include_graphics('AnnotatingTwoSzabo.PNG')
 ```
 
 
-Select the first entry in the table (it will highlight in blue). Next select ``Display_Gene_Transcripts`` from the left side tab which will dynamically generate a visualisation of Slc8a1 with both backsplice and canonical forward splice junctions (as shown in \@ref(fig:SLC8A1TwoSzabo.PNG)
+Select the first entry in the table (it will highlight in blue). Next select ``Display_Gene_Transcripts`` from the left side tab which will dynamically generate a visualisation of Slc8a1 with both backsplice and canonical forward splice junctions (as shown in \@ref(fig:SLC8a1TwoSzabo)
 
 ```{r SLC8A1TwoSzabo, out.width='100%', fig.cap = 'Screenshot of Slc8a1 back splice  and canonical splice junctions.',echo=FALSE}
-knitr::include_graphics('SLC8A1_TwoSzabo.PNG')
+knitr::include_graphics('SLC8a1_TwoSzabo.PNG')
 ```
 
 
