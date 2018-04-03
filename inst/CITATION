@@ -10,7 +10,4 @@ citEntry(entry="article",
          doi = "",
          publisher = "Cold Spring Harbor Labs Journals",
          url = "http://biorxiv.org/content/early/2018",
-         textVersion = paste("David T Humphreys, Nicolas Fossat, Patrick Tam, Joshua Ho.",
-                             "Machine-learning annotation of human splicing branchpoints.",
-                             "bioRxiv (2018).",
-                             "http://dx.doi.org/"))
+         textVersion = paste("David T Humphreys, Nicolas Fossat, Patrick Tam, Joshua Ho."))

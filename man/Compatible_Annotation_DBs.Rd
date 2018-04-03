@@ -28,5 +28,5 @@ names(all_dbs)
 
 # Select a database and display the commands needed to install
 # Use noquote to correctly format output
-\donttest{noquote(all_dbs$Hsapiens.UCSC.hg38) }
+\donttest{ noquote(all_dbs$Hsapiens.UCSC.hg38) }
 }
