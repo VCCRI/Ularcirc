@@ -9,7 +9,7 @@
 #' # through your internet browser
 #' \donttest{
 #' library("Ularcirc")
-#' Ularcirc()
+#' # To start the web app just type:  Ularcirc()
 #' }
 #' @export
 Ularcirc <- function()
