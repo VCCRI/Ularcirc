@@ -16,9 +16,9 @@ Please refer to the Ularcirc vignette for a more detailed workflow.
 \examples{
 # The following commands will load the shiny app either through an RStudio session or
 # through your internet browser
-\donttest{
+
 library("Ularcirc")
-Ularcirc()
-}
+\donttest{ Ularcirc() }
+
 
 }
