@@ -180,3 +180,8 @@ draw.text.w <- function(xc, yc, r, w, n, col="black", cex=1){
 
 
 List_Species_Files <- List_Genomes()
+
+# The distance used to define boundaries of zoom sliderinput.
+# i.e. Gene start/stop +- this distance
+zoomOffset <- 50000
+

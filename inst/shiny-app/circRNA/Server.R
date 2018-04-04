@@ -970,7 +970,7 @@ Annotate_BS_Junc<- function(DataSet, GeneList, MaxDisplay = 15, Library_Strand =
 		  if (Library_Strand == "Same Strand")
 		  {  if (length(strand) == 0)
 		    {
-		        browser()
+		       # browser()
 		        cat("Catch error")
 		    }
 		      if (strand == "-")
@@ -1310,8 +1310,6 @@ debug(debugme)
 ##  showReactLog()
 
 # Global variables
-#  Current_SelectedGene <- {}         # This is adjusted when user selects a table row
-#  Current_SelectedJunction <- {}     # This is adjusted when user selects a table row
   extdata_path <- as.character(DataPath())    # The data path used to save and load project data from
 
   volumes <- c('Ularcirc'= extdata_path)      ## R.home()    or getVolumes()
@@ -1547,7 +1545,7 @@ debug(debugme)
 	        }
 	      }
 	      else
-	      {   browser()
+	      {  # browser()
 	          #shouldn't go in here?
 	      }
 
@@ -1656,7 +1654,8 @@ debug(debugme)
 	    toDisplay$CPM[,2:ncol(toDisplay$RAW)] <- round(toDisplay$RAW[,2:ncol(toDisplay$RAW)]/toDisplay$TOTAL_COUNTS*1000000,digits = 0)
 
 	    if (length(input$LibraryStrandType) == 0)
-	    { browser() }
+	    { # browser()
+	      }
 
 	    if ((input$Annotate_with_GeneName) && (input$Annotation_lib != "NO_ANNOTATION"))
 	    { toDisplay$RAW <- Annotate_BS_Junc(DataSet=toDisplay$RAW, GeneList = GeneList(), MaxDisplay = nrow(toDisplay$RAW), input$LibraryStrandType)
@@ -1702,7 +1701,7 @@ debug(debugme)
 })
 
 
-  GeneList <- eventReactive( input$LoadTxDb,   #     reactive (  #
+  GeneList <- eventReactive( input$LoadTxDb,   # GeneList is called when transcript database is selected
 	{ require(GenomicFeatures)
 	  cat(paste("\n\nLoading species transcriptome coordinates", date()))
 	  Genome_lib <- paste("BSgenome.",input$Species_Genome,sep="")
@@ -1725,7 +1724,7 @@ debug(debugme)
 	  Annotation_Library <- get(input$Annotation_lib)
 		cat(paste("\nLoaded TxDb data",date()))
 
-		##### Update gene lists ########
+		##### Setup pulldown menu of genes. Default is first item in list ########
 		cat(paste("\nRequest to displaying gene list", date()))
 		GL <- as.character(keys(Annotation_Library, "SYMBOL"))
 		cat(paste("\n  Displaying list of ", length(GL)," genes built", date()))
@@ -2086,7 +2085,7 @@ debug(debugme)
   	    }
   	    else
   	    {
-  	      browser()
+  	     # browser()
   	      print("\nHave not implemented unstranded data yet.....")
   	    }
 
@@ -2130,7 +2129,7 @@ debug(debugme)
 	    1,1,1           #  Transcripts
 	  ), 2, 3, byrow = TRUE))      # 2 rows, three columns. First seg  | Second Seg  | total length
 	  par(mar=c(3,2,1,1))
-browser()
+#browser()
 	  RAD_data_set <- Fragment_Alignment_Distribution(Ularcirc_data$Current_Selected_BS_Junction_RAWData)
 	  a <- 1
 	  a<- 1
@@ -2218,7 +2217,7 @@ browser()
 
 	output$circRNA_Sequence_Analysis_ORF <- renderPlot({
   	 if (input$circRNA_Sequence_Analysis == "Open reading frame analysis")
-	  {  browser()
+	  { # browser()
   	  circRNA_Sequence <- Predicted_CircRNA_Sequence(circRNA_exons = Ularcirc_data$circRNA_exons, genelist = GeneList())
 	    tmp <- as.character(circRNA_Sequence)
 	    ORF_lengths <- ''
@@ -2239,7 +2238,7 @@ browser()
 	    w1 <- 270;	# TO DO: change this to reflect correct starting position
 	    w2 <- w1 +  ( max(ORF_lengths)* 3/ nchar(as.character(circRNA_Sequence)) * 360)
 	    r <- 400
-	    browser()
+	 #   browser()
 	    par(mar=c(2, 2, 2, 2));
 	    plot(c(1,900), c(1,900), type="n", axes=FALSE, xlab="", ylab="", main="");
 	    draw.arc(xc=400,yc=400,r=400,w1=270,w2=630,col="blue", lwd=6)    # Draws circRNA
@@ -2522,14 +2521,15 @@ browser()
   	})
 
 
-  	output$Display_Gene_Zoom_Coords <- renderUI ({   # Draw slider input to define regions to display
+  	output$Display_Gene_Zoom_Coords <- renderUI ({
+  	  # Draw slider input to define regions to display
   	  Gene_Transcripts = circRNA_Subset()
   	  Gene_min <- min(Gene_Transcripts$Transcript$start)
   	  Gene_max <- max(Gene_Transcripts$Transcript$stop)
   	  if (is.null(Gene_Transcripts))
   	    return(NULL)
   	  else
-  	  { 	HTML(paste(sliderInput("Gene_Zoom", "Define region within gene to view:",min = Gene_min-50000, max = Gene_max+50000, value = c(Gene_min-15,Gene_max+15)),
+  	  { 	HTML(paste(sliderInput("Gene_Zoom", "Define region within gene to view:",min = Gene_min-zoomOffset, max = Gene_max+zoomOffset, value = c(Gene_min-15,Gene_max+15)),
   	                actionButton("Navigate_Around_Gene","Navigate")) )
   	   }
   	})
@@ -2692,25 +2692,33 @@ browser()
   	     return (NULL)
   	})
 
-  	View_Gene_At_Coords <- eventReactive({  # This code is executed when navigate submit button is pressed or new gene is selected.
+  	View_Gene_At_Coords <- eventReactive({  # This code is executed when navigate submit button is pressed
   	  input$Navigate_Around_Gene
-  	  # input$DisplayAllJunctions_row_last_clicked
-  	  # input$GeneListDisplay
+  	  input$DisplayAllJunctions_row_last_clicked
+  	  input$GeneListDisplay
   	  Ularcirc_data$Current_SelectedGene
-  	  }, {  # First check if new gene was selected. IF so update genomic coordinates
+  	}, {  # First check if new gene was selected. IF so update genomic coordinates
+  	  #browser()
+  	  Gene_Transcripts = circRNA_Subset()
+  	  Gene_min <- min(Gene_Transcripts$Transcript$start) -501
+  	  Gene_max <- max(Gene_Transcripts$Transcript$stop) + 501
+  	  Gene_Coords <- as.numeric(c(Gene_min, Gene_max))
 
-  	    Gene_Transcripts = circRNA_Subset()
-  	    Gene_min <- min(Gene_Transcripts$Transcript$start) -501
-  	    Gene_max <- max(Gene_Transcripts$Transcript$stop) + 501
-  	    Gene_Coords <- as.numeric(c(Gene_min, Gene_max))
-
-  	    if (! is.null(input$Gene_Zoom))
+  	  if (! is.null(input$Gene_Zoom))
+  	  {  # This check just ensures zoom coordinates are applied at right time.
+  	    if ((input$Gene_Zoom[1] > (Gene_min - zoomOffset))  &&
+  	        (input$Gene_Zoom[1] < (Gene_max + zoomOffset)) &&
+  	        (input$Gene_Zoom[2] > (Gene_min - zoomOffset)) &&
+  	        (input$Gene_Zoom[2] < (Gene_max + zoomOffset)))
   	    {
-   #       if ((Gene_min <  input$Gene_Zoom[1] )  && (Gene_max > input$Gene_Zoom[2]))
-            Gene_Coords <- input$Gene_Zoom   # Navigate button selected, select user defined coords
+  	         Gene_Coords <- input$Gene_Zoom   # Navigate button selected, select user defined coords
   	    }
-  	    Gene_Coords
-  	  })  # This returns user requested coordinates
+  	  }
+  	  Gene_Coords
+  	})  # This returns user requested coordinates
+
+
+
 
   	Selected_Junction_Row <- observeEvent(input$DisplayJunctionCountTable_row_last_clicked,
   	 {   # This function will identify the selected values from a table row
