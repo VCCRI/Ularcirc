@@ -1,49 +1,4 @@
 
-####################################3
-##  List_Genomes
-## This function finds all installed libraries and return all genomes that have a linked TxDb
-## Need to have a message for when nothing is installed
-List_Genomes <- function()
-{
-
-  p <- installed.packages()
-  custom_sqlDb <- list.files(pattern="TxDb.*.sqlite",recursive = TRUE)
-  names(custom_sqlDb) <- gsub(pattern="^.*/TxDb.",replacement = "",x = custom_sqlDb) # name of file without directory component
-
-  BSgenome_idx <- grep(pattern = "^BSgenome",x = p[,'Package'],ignore.case = FALSE )   # This identifies BSgenome libraries
-  BSgenome_Names<- as.character(gsub(pattern = "BSgenome.", replacement = "", x = p[BSgenome_idx ,'Package'],ignore.case = FALSE))          # Now have list of genome IDs
-
-  TxDB_idx <- grep(pattern = "^TxDb",x = p[,'Package'],ignore.case = FALSE)
-  # First list installed databases
-  TxDb_Names <- p[TxDB_idx ,'Package']
-  names(TxDb_Names) <- as.character(gsub(pattern = "TxDb.", replacement = "", x = p[TxDB_idx ,'Package'],ignore.case = FALSE) )
-  # Append on custom installed DB which reside in shiny circRNA directory
-  TxDb_Names <- c(TxDb_Names, custom_sqlDb)
-
-
-  Org_Annotation_idx <- grep(pattern = "^org.", x = p[,'Package'], ignore.case=FALSE)
-  Org_Annotation_Library<- as.character(p[Org_Annotation_idx,'Package'])         # Now have reference to annotation library
-
-
-  GenomeOptions <- {}
-  TxDbOptions <- list()
-  Genome_and_TxDb_idx <- 0
-  for (i in 1:length(BSgenome_idx))
-  {
-    if (length(grep(pattern = BSgenome_Names[i],x = TxDb_Names)) > 0)
-    {   Genome_and_TxDb_idx <- Genome_and_TxDb_idx + 1
-        GenomeOptions <-   c(GenomeOptions, BSgenome_Names[i])                                               # Record entry to display as an option for the user.
-        TxDbOptions[[Genome_and_TxDb_idx]]  <- TxDb_Names[grep(pattern = BSgenome_Names[i],x = TxDb_Names)]  #  Record TxDb entried for this genome
-        names(TxDbOptions)[Genome_and_TxDb_idx] <-  BSgenome_Names[i]
-    }
-    else  # no length, therefore no TxDb match
-    {
-    }
-  }
-  Org_Annotation_Library <- c(Org_Annotation_Library, "NO_ANNOTATION")
-  return (list(GenomeOptions=GenomeOptions, TxDbOptions = TxDbOptions, Org_Annotation_Library = Org_Annotation_Library ))
-}
-
 ###########################################################################
 ## DataPath
 ##    This simple function returns a directory name to where data is stored.
@@ -68,6 +23,58 @@ DataPath <- function()
 
   return(extdata_path)
 }
+
+
+####################################3
+##  List_Genomes
+## This function finds all installed libraries and return all genomes that have a linked TxDb
+## Need to have a message for when nothing is installed
+List_Genomes <- function()
+{
+  ularcircPath <- as.character(DataPath())
+  p <- installed.packages()
+  custom_sqlDb <- {}
+  if (dir.exists(ularcircPath))
+  {
+    custom_sqlDb <- list.files(path=ularcircPath, pattern="TxDb.*.sqlite",recursive = TRUE, full.names = TRUE)
+    names(custom_sqlDb) <- gsub(pattern="^.*/TxDb.",replacement = "",x = custom_sqlDb) # name of file without directory component
+  }
+
+  BSgenome_idx <- grep(pattern = "^BSgenome",x = p[,'Package'],ignore.case = FALSE )   # This identifies BSgenome libraries
+  BSgenome_Names<- as.character(gsub(pattern = "BSgenome.", replacement = "", x = p[BSgenome_idx ,'Package'],ignore.case = FALSE))          # Now have list of genome IDs
+
+  TxDB_idx <- grep(pattern = "^TxDb",x = p[,'Package'],ignore.case = FALSE)
+  # First list installed databases
+  TxDb_Names <- p[TxDB_idx ,'Package']
+  names(TxDb_Names) <- as.character(gsub(pattern = "TxDb.", replacement = "", x = p[TxDB_idx ,'Package'],ignore.case = FALSE) )
+  # Append on custom installed DB which reside in shiny circRNA directory
+  if (length(custom_sqlDb))
+  {   TxDb_Names <- c(TxDb_Names, custom_sqlDb)   }
+
+
+  Org_Annotation_idx <- grep(pattern = "^org.", x = p[,'Package'], ignore.case=FALSE)
+  Org_Annotation_Library<- as.character(p[Org_Annotation_idx,'Package'])
+
+  GenomeOptions <- {}
+  TxDbOptions <- list()
+  Genome_and_TxDb_idx <- 0
+  for (i in 1:length(BSgenome_idx))
+  {
+    if (length(grep(pattern = BSgenome_Names[i],x = TxDb_Names)) > 0)
+    {   Genome_and_TxDb_idx <- Genome_and_TxDb_idx + 1
+        GenomeOptions <-   c(GenomeOptions, BSgenome_Names[i])                                               # Record entry to display as an option for the user.
+        TxDbOptions[[Genome_and_TxDb_idx]]  <- TxDb_Names[grep(pattern = BSgenome_Names[i],x = TxDb_Names)]  #  Record TxDb entried for this genome
+        names(TxDbOptions)[Genome_and_TxDb_idx] <-  BSgenome_Names[i]
+    }
+    else  # no length, therefore no TxDb match
+    {
+    }
+  }
+  Org_Annotation_Library <- c(Org_Annotation_Library, "NO_ANNOTATION")
+  return (list(GenomeOptions=GenomeOptions, TxDbOptions = TxDbOptions, Org_Annotation_Library = Org_Annotation_Library ))
+}
+
+
 
 
 ##########################################################################################

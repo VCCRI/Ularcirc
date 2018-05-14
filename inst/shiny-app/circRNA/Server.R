@@ -224,7 +224,7 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
 ## Canonical_Junctions    <- raw data containing canonical splice junctions
 ##
 ##Prepare_Gene_Object<-function(GeneName, BS_Junctions, transcript_reference, File_idx = c(-1), Canonical_Junctions)
-Prepare_Gene_Object<-function(GeneName, BS_Junctions, GeneList, File_idx = c(-1), Canonical_Junctions, Genome_Coords = NULL)
+Prepare_Gene_Object <- function(GeneName, BS_Junctions, GeneList, File_idx = c(-1), Canonical_Junctions, Genome_Coords = NULL)
 {
   if (is.null(GeneName ))
   {  return(NULL)  }
@@ -233,7 +233,13 @@ Prepare_Gene_Object<-function(GeneName, BS_Junctions, GeneList, File_idx = c(-1)
     return(NULL)
   }
 
-  a <- select(GeneList$Annotation_Library, keys = GeneName, columns=c("ENTREZID", "SYMBOL"),keytype="SYMBOL")
+  a <- try(select(GeneList$Annotation_Library, keys = GeneName, columns=c("ENTREZID", "SYMBOL"),keytype="SYMBOL"),silent=TRUE)
+  if (length(grep(pattern="Error", x=a)))
+  { warning("Cannot retrieve genomic information for this gene")
+    return ( NULL )
+  }
+
+
   if (length(which(keys(GeneList$transcript_reference) == a$ENTREZID) ) == 0)
   {  warning("Cannot retrieve genomic information for this gene")
       return ( NULL )
@@ -677,9 +683,9 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 	    }
 	  } # 	  if (length(Linear_Idx) > 0)
 	  ReadsPerGene_Idx <- grep(pattern=paste(IDs[i],".ReadsPerGene.out.tab",sep=""), x=filename$name )
-	  if (length(Linear_Idx) > 0)
+	  if (length(ReadsPerGene_Idx) > 0)
 	  { data_set <- {}
-	    data_set[[i]] <- fread(filename$datapath[Linear_Idx[1]], sep="\t")
+	    data_set[[i]] <- fread(filename$datapath[ReadsPerGene_Idx[1]], sep="\t")
 	    setnames(data_set[[i]],1:5, c("geneName","unstranded","Fstrand","Rstrand"))
 	    data_set$DataSet <- i
 	    if (! is.null(ReadsPerGene_Data))
@@ -991,13 +997,6 @@ Annotate_BS_Junc<- function(DataSet, GeneList, MaxDisplay = 15, Library_Strand =
 		  {	 entrezID_start <- g_GR[subjectHits(t_start)]$gene_id
          entrezID_end <- g_GR[subjectHits(t_end)]$gene_id
          entrezID <- intersect(entrezID_start, entrezID_end)
-
-         # Fails when entrezID is 55747
-     #   browser()
-
-        ## RefSeq<-try(as.data.frame(select(GeneList$Annotation_Library, keys = "55747", columns=c("SYMBOL"),keytype="ENTREZID")[,'SYMBOL']))
-
-		     #entrezID <- g_GR[subjectHits(t)]$gene_id   # Can use this to look up geneID
          entrezID <- try(select(GeneList$Annotation_Library, keys = entrezID, columns=c("SYMBOL"),keytype="ENTREZID")[,'SYMBOL'],silent=TRUE) # Convert to Symbol
          if(length(grep(pattern = "Error in ", x = entrezID)))  # This is start of error message when lookup is not linked
          {  entrezID <- c("Unknown")  }
@@ -1188,15 +1187,15 @@ withProgress(message="Annotating with FSJ coverage", value=0, {
       next
     if (length(grep(pattern=",",x = GeneName)) > 0)   # multiple possible genes. Skip.
       next
-#    if (i == 3)
- #   {  browser()  }
+
     GeneIdx <- which(toDisplay_df$Gene == GeneName)   # This stored index of mutiple or single gene entries
     cat(paste("\n Gene is ",GeneName,". Indexes of:",GeneIdx))
+    if (GeneName == '')
+    { next }
     for (g in 1:length(GeneIdx))
     {
       for (j in 1: length(File_idx))
       {   current_BSJ_coords <- range(as.numeric(unlist(strsplit(x = toDisplay_df$BSjuncName[GeneIdx[g]],split = "_"))[c(2,4)]))   # Grab genomic coordinates of BSJ
-
           PGO<-Prepare_Gene_Object(GeneName, BS_Junctions = BS_Junctions,
                                GeneList= GeneList, File_idx = File_idx[[j]],
                                Canonical_Junctions = Canonical_Junctions)
@@ -1221,7 +1220,7 @@ withProgress(message="Annotating with FSJ coverage", value=0, {
           else
           {  Gene_FSJ_coverage[GeneName,j] <- GeneFeatures$Av_junc_count }
       }
-    }
+    } # for (g in 1:length(GeneIdx))
     DT_idx <- which(toDisplay_df$Gene == GeneName)
 
 #    if ((! is.na(Gene_FSJ_coverage[GeneName])) && (Gene_FSJ_coverage[GeneName] > 0))   # Be surprised if this condition was FALSE
@@ -1531,8 +1530,11 @@ debug(debugme)
 	    BSJ_junctions <- list()    # This hold ALL BSJs
 	    idx <- list()              # Hold all file indexes for each group
 	    data_set_idx <- 0          # This is the list index to both SubsettedData and BSJ_junctons
+
+withProgress(message="Calculating BSJ : ", value=0, {
 	    for(i in 1:a)   # This loop collects all data. Need to keep a copy of everything so in next loop can collate easily
 	    {
+	      incProgress(1/(a), detail = paste("Sample ",i))
 	      SampleIDs_for_current_group <- Groupings[[i]]
 
 	      if (! is.null(inFile))
@@ -1546,7 +1548,7 @@ debug(debugme)
 	      }
 	      else
 	      {  # browser()
-	          #shouldn't go in here?
+	         stop("inFile is NULL, unexpected and unrecoverable error")
 	      }
 
 	      if (length(idx[[data_set_idx]]) > 0)
@@ -1563,13 +1565,17 @@ debug(debugme)
 
 	      }
 	    } # for(i in 1:a)
+})  # withProgress(message="Calculating BSJ : ", value=0, {
 
+
+withProgress(message="Fixing blank BSJ : ", value=0, {
 	    # This loop collates data by assembling a table and filling in the blanks (NAs) where possible
 	    toDisplay$TOTAL_COUNTS <- {}
 	    toDisplay$RAD_Score <- {}        # Type II vs type III junctions
 	    for ( i in 1:data_set_idx)
 	    { OneDataSet <- list()
 
+	      incProgress(1/data_set_idx, detail = paste("Sample ",i))
   	    TotalCounts <- nrow(BSJ_junctions[[i]])   #SubsettedData[[i]]$Freq)
   	    toDisplay$TOTAL_COUNTS <- as.numeric(c(toDisplay$TOTAL_COUNTS, TotalCounts))
 
@@ -1639,11 +1645,14 @@ debug(debugme)
   	    }
 	    } # for ( i in 1:dataset_idx)
 	    # Order table for most variable differences.
+})   # withProgress(message="Fixing blank BSJ : ", value=0, {
 
 #	    most_variable <- apply(toDisplay$RAW[,-1],1,var)
 #	    Top_variable<-toDisplay$RAW[order(most_variable ,decreasing = T ),]
 #	    colnames(Top_variable)<-colnames(toDisplay$RAW)
 	    # Need to construct a properly constructed data.table:
+
+
 	    Top_variable <- toDisplay$RAW
 	    toDisplay$RAW <- data.table(Top_variable[,1])
 	    for(i in 2:ncol(Top_variable))
@@ -1720,13 +1729,12 @@ debug(debugme)
 	    TxDb <- get(input$TxDb)       # Reference object by character string
 	  }
 
+
 	  require(as.character(input$Annotation_lib),character.only = TRUE)
 	  Annotation_Library <- get(input$Annotation_lib)
-		cat(paste("\nLoaded TxDb data",date()))
+	  GL <- as.character(keys(Annotation_Library, "SYMBOL"))
 
 		##### Setup pulldown menu of genes. Default is first item in list ########
-		cat(paste("\nRequest to displaying gene list", date()))
-		GL <- as.character(keys(Annotation_Library, "SYMBOL"))
 		cat(paste("\n  Displaying list of ", length(GL)," genes built", date()))
 		updateSelectizeInput(session,inputId="GeneListDisplay", label="Select a gene from this list", choices = GL, selected = GL[1], server=TRUE)
 

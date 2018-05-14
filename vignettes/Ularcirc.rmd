@@ -112,9 +112,9 @@ To generate the required chimeric junction files the following two parameters mu
 Ularcirc can only add files to individual projects via one upload. Attempting to upload multiple times will only result in previous upload being overwritten by the current upload. Individual or multiple samples are identified by a common file prefix. Therefore for a given project all splice junction files must be located in a common directory and have the appropriate file prefix. For example if the following files were uploaded into Ularcirc:
 
 ```
-SRR12345678_e17.5_heart.Chimeric.out.junction 
-SRR12345678_e17.5_heart.SJ.out.tab 
-SRR87654321_P10_heart.Chimeric.out.junction 
+SRR12345678_e17.5_heart.Chimeric.out.junction
+SRR12345678_e17.5_heart.SJ.out.tab
+SRR87654321_P10_heart.Chimeric.out.junction
 SRR87654321_P10_heart.SJ.out.tab
 ```
 
@@ -122,7 +122,7 @@ SRR87654321_P10_heart.SJ.out.tab
 The above example would result in two samples IDs being imported into Ularcirc, SRR123456768_e17.5_heart and SRR87654321_P10_heart. It is highly recommended to provide a descriptive name as Ularcirc provides no functionality at this time to rename samples. After files are uploaded the Project filename can be entered and saved. The STAR aligner can be instructed to assign a common prefix to output files. This can be specified with the following option:
 
 ```
---outFileNamePrefix Type_your_prefix_here 
+--outFileNamePrefix Type_your_prefix_here
 ```
 
 ## Annotation databases

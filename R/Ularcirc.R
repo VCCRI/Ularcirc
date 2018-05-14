@@ -66,7 +66,7 @@ Compatible_Annotation_DBs <- function()
   Available_Organisms <- {}
   Genome_and_TxDb_idx <- 0
   # Parse through each Bioconductor Genome entry and see which also have  matching TxDb
-  for (i in 1:length(BSgenome_Names))
+  for (i in seq_along(BSgenome_Names))
   {
     # Determine if there is a genome wide annotation database
     Org_Name <- unlist(strsplit(BSgenome_Names[i],"\\."))[1]
@@ -87,18 +87,33 @@ Compatible_Annotation_DBs <- function()
   first_instruction <- 'source("http://bioconductor.org/biocLite.R")'
   final_instruction <- "To use this organism with Ularcirc you must download one BSgenome, one TxDb and one Org database"
   download_commands <- list()
-  for(i in 1: length(Available_Organisms))
-  { download_commands[[i]] <- paste('biocLite("', Org_Annot_Options[[i]],'") # this downloads organism annotations',sep = "")
-    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
-                                                            GenomeOptions[[i]],'") # this downloads organism genome',sep = ""))
-    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
-                                                            TxDbOptions[[i]],'")  # This downloads a transcript database',sep=""))
-    download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
+  relevant_db <- data.frame()
+
+  for(i in seq_along(Available_Organisms))
+  { if (i == 22)
+      browser()
+    if (i == 1)
+      relevant_db <- data.frame(dataType = "Annotations", name=Org_Annot_Options[[i]])
+    else
+      relevant_db <- rbind(relevant_db, data.frame(dataType = "Annotations", name=Org_Annot_Options[[i]]))
+
+    relevant_db <- rbind(relevant_db, data.frame(dataType = "Genome", name=GenomeOptions[[i]]))
+    relevant_db <- rbind(relevant_db, data.frame(dataType = "Transcript", name=TxDbOptions[[i]]))
+
+  #  download_commands[[i]] <- paste('biocLite("', Org_Annot_Options[[i]],'") # this downloads organism annotations',sep = "")
+  #  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
+ #                                                           GenomeOptions[[i]],'") # this downloads organism genome',sep = ""))
+  #  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
+  #                                                          TxDbOptions[[i]],'")  # This downloads a transcript database',sep=""))
+  #  download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
   }
   names(download_commands) <- names(TxDbOptions)
 
+  # data.frame(dataType = "Annotations", name = "org.Bt.eg.db")
+
   print(names(download_commands))
-  invisible(download_commands)
+#  invisible(download_commands)
+  invisible(relevant_db)
 }
 
 
