@@ -4,6 +4,7 @@ Requires output provided by the STAR aligner
 
 Author and maintainer: David Humphreys (d.humphreys  at      victorchang  dot   edu   dot    au)
 
+Pre-print for [Ularcirc now on bioarchives](https://www.biorxiv.org/content/early/2018/05/15/318436). 
 
 # Installation
 You can install Ularcirc using the 'devtools' package
@@ -32,8 +33,9 @@ To start Ularcirc shiny app
 
 	
 # Documentation
-Please refer to pdf manual under the docs folder. This document is currently being built so please
-check back for regular updates.
+Please refer to pdf manual under the docs folder. This document is currently being built so please check back for regular updates.
+
+Please click [this link to view a 12 minute screen cast](https://www.youtube.com/watch?v=BQkCurUF2XQ) that walks through a simple circRNA analysis using Ularcirc.
 
 
 ##  Features

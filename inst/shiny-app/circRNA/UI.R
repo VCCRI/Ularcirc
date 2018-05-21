@@ -175,7 +175,7 @@ shinyUI(fluidPage(
   				br(),
   				p(strong('STEP 2: '),'Load data.',br(),
               'This can either be an existing project which can be loaded under the Project tab.',br(),
-  				    'Alternativevly you can uploading new data. Select "Load new data" under setup option configuration on side menu.',
+  				    'Alternatively you can uploading new data. Select "Load new data" under setup option configuration on side menu.',
   				    'Select filter options and then click upload file button to load data.
                 Once data is loaded you can navidate to project tab to save as a project.
   				      Note that reads that are filtered out are removed permanently'),
@@ -325,6 +325,7 @@ shinyUI(fluidPage(
 					br()),
 
 				conditionalPanel(condition = "output.fileUploaded == true",
+				  verbatimTextOutput("ShowDataSets_on_JunctionView"),
 				  conditionalPanel('input.Junction_View_Mode == "Backsplice"',
   					uiOutput("DisplayBS_sequence_details"),
 

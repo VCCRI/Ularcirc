@@ -1402,20 +1402,21 @@ debug(debugme)
 
 
   IdentifyDataSets <- function()
-  {
+  {   idx <- {}
       if (! is.null(input$SelectedFiles))
 	    { idx <- which( Ularcirc_data$ProjectData$SampleIDs == input$SelectedFiles) } # m379()$SampleIDs == input$SelectedFiles)  }
-	    Selected_DataSets <- c("No data loaded or selected displaying NOTHING")
+	    Selected_DataSets <- warning("No data loaded or selected so nothing to display",
+	                               "\nPlease navigate back to PROJECT tab and load a data set")
 	    if (length(idx) > 0)
 	    {	Selected_DataSets <- paste("\nDisplaying data from ", Ularcirc_data$ProjectData$SampleIDs[idx])}   # m379()$SampleIDs[idx])}
 
-	  Selected_DataSets
+	    Selected_DataSets
   }
 
 	output$ShowDataSets_on_GeneView <- renderText({   IdentifyDataSets()	})
 	output$ShowDataSets_on_Genome_View <- renderText({   IdentifyDataSets()	})
 	output$ShowDataSets_on_DataView <- renderText({   IdentifyDataSets()	})
-
+	output$ShowDataSets_on_JunctionView <- renderText({   IdentifyDataSets()	})
 
 	m379 <- observeEvent(input$JunctionFile,{
 	  #extdata_path <- DataPath()  # function from Global.R
