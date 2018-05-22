@@ -11,7 +11,7 @@ author:
     affiliation: Bioinformatics and Systems Medicine Laboratory, Victor Chang Cardiac Research Institute
 thanks: "Replication files are available on https://github.com/VCCRI/Ularcirc"
 abstract: "This vignette provides walkthroughs on how to install and use Ularcirc. Ularcirc provides a broad spectrum of analysis tools for circRNA analysis inlcuding  identification, backsplice junction visualisation, sequence analysis (ORF and miRNA binding sites). One sample data set is provided with installation."
-date: "April 03, 2018"
+date: "May 22, 2018"
 output: 
     BiocStyle::html_document:
     highlight: pygments
@@ -84,9 +84,9 @@ Navigate to ``Gene_View`` tab. In the options on the left hand panel select ``An
 <img src="AnnotatingTwoSzabo.PNG" title="Screenshot of Ularcirc Gene view tab." alt="Screenshot of Ularcirc Gene view tab." width="100%" />
 
 
-Select the first entry in the table (it will highlight in blue). Next select ``Display_Gene_Transcripts`` from the left side tab which will dynamically generate a visualisation of Slc8a1 with both backsplice and canonical forward splice junctions (as shown in \@ref(fig:SLC8A1TwoSzabo.PNG)
+Select the first entry in the table (it will highlight in blue). Next select ``Display_Gene_Transcripts`` from the left side tab which will dynamically generate a visualisation of Slc8a1 with both backsplice and canonical forward splice junctions (as shown in \@ref(fig:SLC8a1TwoSzabo)
 
-<img src="SLC8A1_TwoSzabo.PNG" title="Screenshot of Slc8a1 back splice  and canonical splice junctions." alt="Screenshot of Slc8a1 back splice  and canonical splice junctions." width="100%" />
+<img src="SLC8a1_TwoSzabo.PNG" title="Screenshot of Slc8a1 back splice  and canonical splice junctions." alt="Screenshot of Slc8a1 back splice  and canonical splice junctions." width="100%" />
 
 
 
@@ -103,9 +103,9 @@ To generate the required chimeric junction files the following two parameters mu
 Ularcirc can only add files to individual projects via one upload. Attempting to upload multiple times will only result in previous upload being overwritten by the current upload. Individual or multiple samples are identified by a common file prefix. Therefore for a given project all splice junction files must be located in a common directory and have the appropriate file prefix. For example if the following files were uploaded into Ularcirc:
 
 ```
-SRR12345678_e17.5_heart.Chimeric.out.junction 
-SRR12345678_e17.5_heart.SJ.out.tab 
-SRR87654321_P10_heart.Chimeric.out.junction 
+SRR12345678_e17.5_heart.Chimeric.out.junction
+SRR12345678_e17.5_heart.SJ.out.tab
+SRR87654321_P10_heart.Chimeric.out.junction
 SRR87654321_P10_heart.SJ.out.tab
 ```
 
@@ -113,7 +113,7 @@ SRR87654321_P10_heart.SJ.out.tab
 The above example would result in two samples IDs being imported into Ularcirc, SRR123456768_e17.5_heart and SRR87654321_P10_heart. It is highly recommended to provide a descriptive name as Ularcirc provides no functionality at this time to rename samples. After files are uploaded the Project filename can be entered and saved. The STAR aligner can be instructed to assign a common prefix to output files. This can be specified with the following option:
 
 ```
---outFileNamePrefix Type_your_prefix_here 
+--outFileNamePrefix Type_your_prefix_here
 ```
 
 ## Annotation databases
@@ -224,7 +224,19 @@ The genome tab within Ularcirc provides explorative analysis within defined geno
 
 ## Step 5: Sequence analysis of splice/backsplice junctions
 
-Description of this section will be populated soon.
+To obtain detailed information on a particular junction (either forward splice or backsplice) the junction must be selected. Splice junctions can be selected after displaying either the ``Backsplice junction count data`` or ``Canonical junction count data``. Note that only one backsplice junction and one canonical splice junction can be selected at any one time. A number of features that relate to the selected splice and/or backsplice junction are populated in the ``Junction view`` tab. The sidebar menu of the junction view tab provides an option to display information on the selected backsplice or the canonical junction. The sequence of either a backsplice or canonical junction contains a ``.`` character in the position of the joining exon ends as shown below. Ularcirc can also predict the complete circRNA sequence which is a concatenation of the longest combinations of exons that reside within the boundaries of the backsplice junction. 
+
+<img src="BackspliceJunctionDetails.PNG" title="Ularcirc Junction view tab showing a backsplice junction for Slc8a1. Note that the . character defines splice junction" alt="Ularcirc Junction view tab showing a backsplice junction for Slc8a1. Note that the . character defines splice junction" width="65%" />
+
+For backsplice junctions Ularcirc provides further sequence analysis in the form of open reading frame (ORF) and microRNA binding site analysis. Output of these analyses can be selected from the side bar tab. The ORF analysis displays the longest ORF as a graphic on the main tab (see figure below for an example). There are options that can display the amino acid sequence of this ORF on the side tab.
+
+<img src="BackspliceJunctionORF.PNG" title="Ularcirc Junction view tab showing the potential ORF within Slc8a1" alt="Ularcirc Junction view tab showing the potential ORF within Slc8a1" width="65%" />
+
+For microRNA binding site analysis Ularcirc can analyse the predicted circRNA sequence. By default Ularcirc searches for complementary 7nt miRNA seed sequence that exist within the circRNA. There are options to increase or descrease the definition of the miRNA seed in a pull down menu. Ularcirc by default will only display miRNA bindings sites that are found at least two times. This threshold can also be modified via a pulldown menu as shown in the figure below. 
+
+
+<img src="BackspliceJunction_miRNA.PNG" title="Ularcirc Junction view tab showing potential miRNA binding sites that reside within Slc8a1" alt="Ularcirc Junction view tab showing potential miRNA binding sites that reside within Slc8a1" width="65%" />
+
 
 # Session Information-----------------------------------
 
@@ -246,80 +258,73 @@ sessionInfo()
 ## [5] LC_TIME=English_Australia.1252    
 ## 
 ## attached base packages:
-## [1] parallel  stats4    stats     graphics  grDevices utils     datasets 
+## [1] stats4    parallel  stats     graphics  grDevices utils     datasets 
 ## [8] methods   base     
 ## 
 ## other attached packages:
-##  [1] BiocStyle_2.6.1                        
-##  [2] knitr_1.19                             
-##  [3] org.Hs.eg.db_3.5.0                     
-##  [4] TxDb.Hsapiens.UCSC.hg38.knownGene_3.4.0
-##  [5] BSgenome.Hsapiens.UCSC.hg38_1.4.1      
-##  [6] moments_0.14                           
-##  [7] GenomicFeatures_1.30.3                 
-##  [8] AnnotationDbi_1.40.0                   
-##  [9] gsubfn_0.7                             
-## [10] proto_1.0.0                            
-## [11] DT_0.4                                 
-## [12] shinyFiles_0.6.2                       
-## [13] data.table_1.10.4-3                    
-## [14] Sushi_1.16.0                           
-## [15] biomaRt_2.34.2                         
-## [16] zoo_1.8-1                              
-## [17] shiny_1.0.5                            
-## [18] BiocInstaller_1.28.0                   
-## [19] interactiveDisplayBase_1.16.0          
-## [20] Ularcirc_0.99.5                        
-## [21] devtools_1.13.5                        
-## [22] AnnotationHub_2.10.1                   
-## [23] BSgenome_1.46.0                        
-## [24] rtracklayer_1.38.3                     
-## [25] Biostrings_2.46.0                      
-## [26] XVector_0.18.0                         
-## [27] testthat_2.0.0                         
-## [28] BiocCheck_1.14.0                       
-## [29] GenomicRanges_1.30.0                   
-## [30] GenomeInfoDb_1.14.0                    
-## [31] IRanges_2.12.0                         
-## [32] S4Vectors_0.16.0                       
-## [33] Biobase_2.38.0                         
-## [34] BiocGenerics_0.24.0                    
+##  [1] BiocStyle_2.6.1                         
+##  [2] knitr_1.19                              
+##  [3] devtools_1.13.5                         
+##  [4] org.Mm.eg.db_3.5.0                      
+##  [5] TxDb.Mmusculus.UCSC.mm10.knownGene_3.4.0
+##  [6] BSgenome.Mmusculus.UCSC.mm10_1.4.0      
+##  [7] mirbase.db_1.2.0                        
+##  [8] org.Hs.eg.db_3.5.0                      
+##  [9] TxDb.Hsapiens.UCSC.hg38.knownGene_3.4.0 
+## [10] BSgenome.Hsapiens.UCSC.hg38_1.4.1       
+## [11] BSgenome_1.46.0                         
+## [12] rtracklayer_1.38.3                      
+## [13] moments_0.14                            
+## [14] GenomicFeatures_1.30.3                  
+## [15] AnnotationDbi_1.40.0                    
+## [16] Biobase_2.38.0                          
+## [17] GenomicRanges_1.30.0                    
+## [18] GenomeInfoDb_1.14.0                     
+## [19] Biostrings_2.46.0                       
+## [20] XVector_0.18.0                          
+## [21] IRanges_2.12.0                          
+## [22] S4Vectors_0.16.0                        
+## [23] BiocGenerics_0.24.0                     
+## [24] gsubfn_0.7                              
+## [25] proto_1.0.0                             
+## [26] DT_0.4                                  
+## [27] shinyFiles_0.6.2                        
+## [28] data.table_1.10.4-3                     
+## [29] Sushi_1.16.0                            
+## [30] biomaRt_2.34.2                          
+## [31] zoo_1.8-1                               
+## [32] shiny_1.0.5                             
 ## 
 ## loaded via a namespace (and not attached):
-##  [1] bitops_1.0-6               matrixStats_0.53.1        
-##  [3] bit64_0.9-7                progress_1.1.2            
-##  [5] httr_1.3.1                 rprojroot_1.3-2           
-##  [7] backports_1.1.2            tools_3.4.3               
-##  [9] R6_2.2.2                   DBI_0.8                   
-## [11] withr_2.1.2                prettyunits_1.0.2         
-## [13] RMySQL_0.10.14             git2r_0.21.0              
-## [15] bit_1.1-12                 curl_3.1                  
-## [17] compiler_3.4.3             graph_1.56.0              
-## [19] xml2_1.2.0                 desc_1.1.1                
-## [21] DelayedArray_0.4.1         RBGL_1.54.0               
-## [23] commonmark_1.4             stringr_1.3.0             
-## [25] digest_0.6.15              Rsamtools_1.30.0          
-## [27] rmarkdown_1.9              stringdist_0.9.4.7        
-## [29] pkgconfig_2.0.1            htmltools_0.3.6           
-## [31] highr_0.6                  htmlwidgets_1.0           
-## [33] rlang_0.2.0                rstudioapi_0.7            
-## [35] RSQLite_2.0                jsonlite_1.5              
-## [37] crosstalk_1.0.0            BiocParallel_1.12.0       
-## [39] RCurl_1.95-4.10            magrittr_1.5              
-## [41] GenomeInfoDbData_1.0.0     Matrix_1.2-12             
-## [43] Rcpp_0.12.16               stringi_1.1.7             
-## [45] yaml_2.1.18                RJSONIO_1.3-0             
-## [47] SummarizedExperiment_1.8.1 zlibbioc_1.24.0           
-## [49] biocViews_1.46.0           grid_3.4.3                
-## [51] blob_1.1.1                 crayon_1.3.4              
-## [53] lattice_0.20-35            tcltk_3.4.3               
-## [55] optparse_1.4.4             RUnit_0.4.31              
-## [57] codetools_0.2-15           XML_3.98-1.10             
-## [59] evaluate_0.10.1            httpuv_1.3.6.2            
-## [61] getopt_1.20.2              assertthat_0.2.0          
-## [63] mime_0.5                   xtable_1.8-2              
-## [65] roxygen2_6.0.1             GenomicAlignments_1.14.1  
-## [67] memoise_1.1.0
+##  [1] httr_1.3.1                    RMySQL_0.10.14               
+##  [3] bit64_0.9-7                   jsonlite_1.5                 
+##  [5] AnnotationHub_2.10.1          assertthat_0.2.0             
+##  [7] interactiveDisplayBase_1.16.0 highr_0.6                    
+##  [9] blob_1.1.1                    GenomeInfoDbData_1.0.0       
+## [11] Rsamtools_1.30.0              yaml_2.1.18                  
+## [13] progress_1.1.2                backports_1.1.2              
+## [15] RSQLite_2.0                   lattice_0.20-35              
+## [17] digest_0.6.15                 htmltools_0.3.6              
+## [19] httpuv_1.3.6.2                Matrix_1.2-12                
+## [21] XML_3.98-1.10                 pkgconfig_2.0.1              
+## [23] Ularcirc_0.99.5               zlibbioc_1.24.0              
+## [25] xtable_1.8-2                  BiocParallel_1.12.0          
+## [27] withr_2.1.2                   SummarizedExperiment_1.8.1   
+## [29] RJSONIO_1.3-0                 magrittr_1.5                 
+## [31] mime_0.5                      evaluate_0.10.1              
+## [33] memoise_1.1.0                 xml2_1.2.0                   
+## [35] BiocInstaller_1.28.0          tools_3.4.3                  
+## [37] prettyunits_1.0.2             matrixStats_0.53.1           
+## [39] stringr_1.3.0                 DelayedArray_0.4.1           
+## [41] compiler_3.4.3                grid_3.4.3                   
+## [43] RCurl_1.95-4.10               htmlwidgets_1.0              
+## [45] crosstalk_1.0.0               rmarkdown_1.9                
+## [47] bitops_1.0-6                  tcltk_3.4.3                  
+## [49] roxygen2_6.0.1                DBI_0.8                      
+## [51] curl_3.1                      R6_2.2.2                     
+## [53] GenomicAlignments_1.14.1      bit_1.1-12                   
+## [55] rprojroot_1.3-2               commonmark_1.4               
+## [57] stringi_1.1.7                 Rcpp_0.12.16
 ```
 
 

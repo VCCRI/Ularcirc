@@ -31,22 +31,27 @@ Ularcirc <- function()
 #' required database on their local computer. Once installed the databases are
 #' immediately available to Ularcirc upon re-starting the shiny app.
 #' This function requires connection to the internet.
+#' @param list_commands Boolean. By default this is FALSE and will return a dataframe of all
+#' compatible databases. When set to TRUE will return a list of commands that can be copied
+#' onto console which will download the appropriate databases (see example below).
 #' @return Returns a list of installation commands for all compatible annotation databases
 #' @examples
 #' # Get all bioconductor annotation databases that are compatible with Ularcirc
 #' library('BSgenome')
 #' library('httpuv')
 #' library('AnnotationHub')
-#' all_dbs <- Compatible_Annotation_DBs()
+#' # Prepare a dataframe of all compatible annotation databases
+#' all_db_df <- Compatible_Annotation_DBs()
 #'
-#' # List database IDs
-#' names(all_dbs)
+#' # Prepare a list of R commands that users can copy paste to download
+#' # and install annotation databases on local machine
+#' db_download_commands <- Compatible_Annotation_DBs(list_commands = TRUE)
 #'
 #' # Select a database and display the commands needed to install
 #' # Use noquote to correctly format output
-#' \donttest{ noquote(all_dbs$Hsapiens.UCSC.hg38) }
+#' \donttest{ noquote(db_download_commands$Hsapiens.UCSC.hg38) }
 #' @export
-Compatible_Annotation_DBs <- function()
+Compatible_Annotation_DBs <- function(list_commands = FALSE)
 {
   ah <- AnnotationHub::AnnotationHub()
   all_OrgDb <- AnnotationHub::query(ah,"OrgDb")
@@ -75,11 +80,11 @@ Compatible_Annotation_DBs <- function()
     TxDb_idx <- grep(pattern = BSgenome_Names[i],x = TxDb_Names)
     if ((length(TxDb_idx) > 0) && (length(Org_idx) > 0))
     { Genome_and_TxDb_idx <- Genome_and_TxDb_idx + 1
-    GenomeOptions <-   c(GenomeOptions, BSgenome_Names[i])                # Record entry to display as an option for the user.
-    TxDbOptions[[Genome_and_TxDb_idx]]  <- unique(TxDb_Names[TxDb_idx])   #  Record TxDb entries for this genome
-    names(TxDbOptions)[Genome_and_TxDb_idx] <-  BSgenome_Names[i]
-    Org_Annot_Options <- c(Org_Annot_Options, Bioconductor_Orgs[Org_idx])
-    Available_Organisms <- c(Available_Organisms, Org_Name)
+      GenomeOptions <-   c(GenomeOptions, BSgenome_Names[i])                # Record entry to display as an option for the user.
+      TxDbOptions[[Genome_and_TxDb_idx]]  <- unique(TxDb_Names[TxDb_idx])   #  Record TxDb entries for this genome
+      names(TxDbOptions)[Genome_and_TxDb_idx] <-  BSgenome_Names[i]
+      Org_Annot_Options <- c(Org_Annot_Options, Bioconductor_Orgs[Org_idx])
+      Available_Organisms <- c(Available_Organisms, Org_Name)
     }
   }
 
@@ -87,16 +92,30 @@ Compatible_Annotation_DBs <- function()
   first_instruction <- 'source("http://bioconductor.org/biocLite.R")'
   final_instruction <- "To use this organism with Ularcirc you must download one BSgenome, one TxDb and one Org database"
   download_commands <- list()
+  compatible_databases <- data.frame()
   for(i in seq_along(Available_Organisms))
-  { download_commands[[i]] <- paste('biocLite("', Org_Annot_Options[[i]],'") # this downloads organism annotations',sep = "")
-  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
+  {
+    download_commands[[i]] <- paste('biocLite("', Org_Annot_Options[[i]],'") # this downloads organism annotations',sep = "")
+    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
                                                             GenomeOptions[[i]],'") # this downloads organism genome',sep = ""))
-  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
+    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
                                                             TxDbOptions[[i]],'")  # This downloads a transcript database',sep=""))
-  download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
+    download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
+
+    compatible_entry <- data.frame(annotation=Org_Annot_Options[[i]],
+                                       genome=GenomeOptions[[i]],
+                                       txdb=TxDbOptions[[i]])
+
+    if (i == 1)
+    {   compatible_databases <- compatible_entry  }
+    else
+    {   compatible_databases <- rbind(compatible_databases, compatible_entry)  }
   }
   names(download_commands) <- names(TxDbOptions)
 
-  print(names(download_commands))
-  invisible(download_commands)
+ # print(names(download_commands))
+  if (list_commands)
+    invisible(compatible_databases)
+  else
+    invisible(download_commands)
 }

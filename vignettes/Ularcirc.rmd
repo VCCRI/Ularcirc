@@ -235,21 +235,21 @@ The genome tab within Ularcirc provides explorative analysis within defined geno
 
 To obtain detailed information on a particular junction (either forward splice or backsplice) the junction must be selected. Splice junctions can be selected after displaying either the ``Backsplice junction count data`` or ``Canonical junction count data``. Note that only one backsplice junction and one canonical splice junction can be selected at any one time. A number of features that relate to the selected splice and/or backsplice junction are populated in the ``Junction view`` tab. The sidebar menu of the junction view tab provides an option to display information on the selected backsplice or the canonical junction. The sequence of either a backsplice or canonical junction contains a ``.`` character in the position of the joining exon ends as shown below. Ularcirc can also predict the complete circRNA sequence which is a concatenation of the longest combinations of exons that reside within the boundaries of the backsplice junction. 
 
-```{r HG38AvailableDatabases, out.width='65%', fig.cap = 'Ularcirc Junction view tab showing a backsplice junction for Slc8a1. Note that the . character defines splice junction',echo=FALSE}
+```{r HG38Slc8a1_BSJ, out.width='65%', fig.cap = 'Ularcirc Junction view tab showing a backsplice junction for Slc8a1. Note that the . character defines splice junction',echo=FALSE}
 knitr::include_graphics('BackspliceJunctionDetails.PNG')
 ```
 
 For backsplice junctions Ularcirc provides further sequence analysis in the form of open reading frame (ORF) and microRNA binding site analysis. Output of these analyses can be selected from the side bar tab. The ORF analysis displays the longest ORF as a graphic on the main tab (see figure below for an example). There are options that can display the amino acid sequence of this ORF on the side tab.
 
-```{r HG38AvailableDatabases, out.width='65%', fig.cap = 'Ularcirc Junction view tab showing the potential ORF within Slc8a1',echo=FALSE}
+```{r HG38Slc8a1_ORF, out.width='65%', fig.cap = 'Ularcirc Junction view tab showing the potential ORF within Slc8a1',echo=FALSE}
 knitr::include_graphics('BackspliceJunctionORF.PNG')
 ```
 
 For microRNA binding site analysis Ularcirc can analyse the predicted circRNA sequence. By default Ularcirc searches for complementary 7nt miRNA seed sequence that exist within the circRNA. There are options to increase or descrease the definition of the miRNA seed in a pull down menu. Ularcirc by default will only display miRNA bindings sites that are found at least two times. This threshold can also be modified via a pulldown menu as shown in the figure below. 
 
 
-```{r HG38AvailableDatabases, out.width='65%', fig.cap = 'Ularcirc Junction view tab showing potential miRNA binding sites that reside within Slc8a1',echo=FALSE}
-knitr::include_graphics('BackspliceJunctionORF.PNG')
+```{r HG38Slc8a1_miRNA, out.width='65%', fig.cap = 'Ularcirc Junction view tab showing potential miRNA binding sites that reside within Slc8a1',echo=FALSE}
+knitr::include_graphics('BackspliceJunction_miRNA.PNG')
 ```
 
 

@@ -4,7 +4,12 @@
 \alias{Compatible_Annotation_DBs}
 \title{Compatible_Annotation_DBs}
 \usage{
-Compatible_Annotation_DBs()
+Compatible_Annotation_DBs(list_commands = FALSE)
+}
+\arguments{
+\item{list_commands}{Boolean. By default this is FALSE and will return a dataframe of all
+compatible databases. When set to TRUE will return a list of commands that can be copied
+onto console which will download the appropriate databases (see example below).}
 }
 \value{
 Returns a list of installation commands for all compatible annotation databases
@@ -21,12 +26,14 @@ This function requires connection to the internet.
 library('BSgenome')
 library('httpuv')
 library('AnnotationHub')
-all_dbs <- Compatible_Annotation_DBs()
+# Prepare a dataframe of all compatible annotation databases
+all_db_df <- Compatible_Annotation_DBs()
 
-# List database IDs
-names(all_dbs)
+# Prepare a list of R commands that users can copy paste to download
+# and install annotation databases on local machine
+db_download_commands <- Compatible_Annotation_DBs(list_commands = TRUE)
 
 # Select a database and display the commands needed to install
 # Use noquote to correctly format output
-\donttest{ noquote(all_dbs$Hsapiens.UCSC.hg38) }
+\donttest{ noquote(db_download_commands$Hsapiens.UCSC.hg38) }
 }
