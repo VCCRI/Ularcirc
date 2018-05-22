@@ -4,3 +4,4 @@
 .Rbuildignore
 inst/doc
 docs
+docs/*
