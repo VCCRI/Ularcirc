@@ -2,7 +2,7 @@ Package: Ularcirc
 Type: Package
 Title: Shiny app for canonical and back splicing analysis (i.e. circular and 
       mRNA analysis)
-Version: 0.99.16
+Version: 0.99.17
 Authors@R: person ("David", "Humphreys", email="d.humphreys@victorchang.edu.au", 
       role = c("aut","cre"))
 Description: Ularcirc reads in STAR aligned splice junction files and provides
