@@ -26,7 +26,7 @@ Ularcirc <- function()
 
 #' Compatible_Annotation_DBs
 #'
-#' Interogates bioconductor databases and identifies those that are compatible
+#' Interogates Bioconductor databases and identifies those that are compatible
 #' with Ularcirc. Builds a list of commands that the user can copy to install the
 #' required database on their local computer. Once installed the databases are
 #' immediately available to Ularcirc upon re-starting the shiny app.
@@ -34,24 +34,18 @@ Ularcirc <- function()
 #' @param list_commands Boolean. By default this is FALSE and will return a dataframe of all
 #' compatible databases. When set to TRUE will return a list of commands that can be copied
 #' onto console which will download the appropriate databases (see example below).
-#' @return Returns a list of installation commands for all compatible annotation databases
+#' @return Returns a list of compatible annotation databases
 #' @examples
-#' # Get all bioconductor annotation databases that are compatible with Ularcirc
+#' # Get all Bioconductor annotation databases that are compatible with Ularcirc
 #' library('BSgenome')
 #' library('httpuv')
 #' library('AnnotationHub')
 #' # Prepare a dataframe of all compatible annotation databases
-#' all_db_df <- Compatible_Annotation_DBs()
+#' compatible_DBs <- Compatible_Annotation_DBs()
 #'
-#' # Prepare a list of R commands that users can copy paste to download
-#' # and install annotation databases on local machine
-#' db_download_commands <- Compatible_Annotation_DBs(list_commands = TRUE)
-#'
-#' # Select a database and display the commands needed to install
-#' # Use noquote to correctly format output
-#' \donttest{ noquote(db_download_commands$Hsapiens.UCSC.hg38) }
+#' cat(paste(compatible_DBs[1,],collapse=","))
 #' @export
-Compatible_Annotation_DBs <- function(list_commands = FALSE)
+Compatible_Annotation_DBs <- function(species ='')
 {
   ah <- AnnotationHub::AnnotationHub()
   all_OrgDb <- AnnotationHub::query(ah,"OrgDb")
@@ -103,8 +97,8 @@ Compatible_Annotation_DBs <- function(list_commands = FALSE)
     download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
 
     compatible_entry <- data.frame(annotation=Org_Annot_Options[[i]],
-                                       genome=GenomeOptions[[i]],
-                                       txdb=TxDbOptions[[i]])
+                                       genome=paste("BSgenome.",GenomeOptions[[i]],sep=""),
+                                       txdb=paste("TxDb.",TxDbOptions[[i]],sep="") )
 
     if (i == 1)
     {   compatible_databases <- compatible_entry  }
@@ -114,8 +108,22 @@ Compatible_Annotation_DBs <- function(list_commands = FALSE)
   names(download_commands) <- names(TxDbOptions)
 
  # print(names(download_commands))
-  if (list_commands)
-    invisible(compatible_databases)
-  else
-    invisible(download_commands)
+  invisible(compatible_databases)
 }
+
+
+
+
+## Ularcirc_Annotation_Commands <- function(compatible_databases, species = "None")
+##{
+##    idx <- grep(pattern = "Hsapiens",x = test[,"genome"])
+##    short_list <- compatible_databases[idx,]
+##
+##
+##  download_commands[[i]] <- paste('biocLite("', Org_Annot_Options[[i]],'") # this downloads organism annotations',sep = "")
+##  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
+##                                                            GenomeOptions[[i]],'") # this downloads organism genome',sep = ""))
+##  download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
+##                                                            TxDbOptions[[i]],'")  # This downloads a transcript database',sep=""))
+##  download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
+##}

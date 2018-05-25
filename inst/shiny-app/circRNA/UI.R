@@ -122,7 +122,7 @@ shinyUI(fluidPage(
             p("chr8:57303263-57324835"),p("chr5: 77000000 - 77100000"),p("MSTR.5271.1 ch13: 102349720 - 102359752 stand 2"),
 #                 radioButtons("JunctionType", "Junction Type:",choices = c("Backsplice","Alternative Canonical","All"), selected=c("Backsplice")),
             checkboxInput('ShowGenomeCanonicalCountTable', 'Display forward canonical junction count data',FALSE),
-            checkboxInput('ShowFSJ_Sequence', 'Display forward canonical junction count data',FALSE),
+            checkboxInput('ShowFSJ_Sequence', 'Display splice junction sequence',FALSE),
             br()
       ), #conditionalPanel
 
