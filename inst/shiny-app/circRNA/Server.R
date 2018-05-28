@@ -2284,6 +2284,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	     incProgress(1/2, detail = paste("Warning:: status bar cannot increment"))
   	    if (exists("ProjectGroupings"))   # Remove existing project Grouping before loading in new data
   	    { remove(ProjectGroupings) }
+  	    if (exists("meta_data"))
+  	    { remove(meta_data)}
 
     	#  extdata_path <- DataPath()  # function from Global.R
 	      ProjectFileName <- paste(extdata_path,"/",input$LoadExistingProject, ".RData", sep="")

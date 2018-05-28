@@ -43,7 +43,12 @@ Ularcirc <- function()
 #' # Prepare a dataframe of all compatible annotation databases
 #' compatible_DBs <- Compatible_Annotation_DBs()
 #'
-#' cat(paste(compatible_DBs[1,],collapse=","))
+#' # Example of how to find a relevant database and load the relevant databases:
+#' # This example find hg38 databases
+#' idx <- grep(pattern="hg38", x= compbtible_DBs[,"genome"])
+#' source("http://bioconductor.org/biocLite.R")
+#' biocLite(c(compatible_DBs[idx,]))
+#'
 #' @export
 Compatible_Annotation_DBs <- function(species ='')
 {
@@ -108,7 +113,7 @@ Compatible_Annotation_DBs <- function(species ='')
   names(download_commands) <- names(TxDbOptions)
 
  # print(names(download_commands))
-  invisible(compatible_databases)
+  invisible(as.matrix(compatible_databases))
 }
 
 
