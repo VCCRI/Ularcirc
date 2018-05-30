@@ -31,9 +31,9 @@ Ularcirc <- function()
 #' required database on their local computer. Once installed the databases are
 #' immediately available to Ularcirc upon re-starting the shiny app.
 #' This function requires connection to the internet.
-#' @param list_commands Boolean. By default this is FALSE and will return a dataframe of all
-#' compatible databases. When set to TRUE will return a list of commands that can be copied
-#' onto console which will download the appropriate databases (see example below).
+#' @param search_term : character string of a full or part name of a database.
+#'        Will return only those entries that contain this search term. Not case
+#'        sensitive.
 #' @return Returns a list of compatible annotation databases
 #' @examples
 #' # Get all Bioconductor annotation databases that are compatible with Ularcirc
@@ -42,15 +42,16 @@ Ularcirc <- function()
 #' library('AnnotationHub')
 #' # Prepare a dataframe of all compatible annotation databases
 #' compatible_DBs <- Compatible_Annotation_DBs()
+#' comatile_DBs_human <- Compatible_Annotation_DBs("Hsapiens")
 #'
 #' # Example of how to find a relevant database and load the relevant databases:
 #' # This example find hg38 databases
-#' idx <- grep(pattern="hg38", x= compbtible_DBs[,"genome"])
+#' idx <- grep(pattern="hg38", x= compatible_DBs[,"genome"])
 #' source("http://bioconductor.org/biocLite.R")
 #' biocLite(c(compatible_DBs[idx,]))
 #'
 #' @export
-Compatible_Annotation_DBs <- function(species ='')
+Compatible_Annotation_DBs <- function(search_term ='')
 {
   ah <- AnnotationHub::AnnotationHub()
   all_OrgDb <- AnnotationHub::query(ah,"OrgDb")
@@ -88,32 +89,30 @@ Compatible_Annotation_DBs <- function(species ='')
   }
 
   # Construct download commands
-  first_instruction <- 'source("http://bioconductor.org/biocLite.R")'
-  final_instruction <- "To use this organism with Ularcirc you must download one BSgenome, one TxDb and one Org database"
-  download_commands <- list()
   compatible_databases <- data.frame()
   for(i in seq_along(Available_Organisms))
   {
-    download_commands[[i]] <- paste('biocLite("', Org_Annot_Options[[i]],'") # this downloads organism annotations',sep = "")
-    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("BSgenome.',
-                                                            GenomeOptions[[i]],'") # this downloads organism genome',sep = ""))
-    download_commands[[i]] <- c(download_commands[[i]], paste('biocLite("TxDb.',
-                                                            TxDbOptions[[i]],'")  # This downloads a transcript database',sep=""))
-    download_commands[[i]] <- c(first_instruction, download_commands[[i]], final_instruction)
-
     compatible_entry <- data.frame(annotation=Org_Annot_Options[[i]],
                                        genome=paste("BSgenome.",GenomeOptions[[i]],sep=""),
                                        txdb=paste("TxDb.",TxDbOptions[[i]],sep="") )
-
     if (i == 1)
     {   compatible_databases <- compatible_entry  }
     else
     {   compatible_databases <- rbind(compatible_databases, compatible_entry)  }
   }
-  names(download_commands) <- names(TxDbOptions)
 
- # print(names(download_commands))
-  invisible(as.matrix(compatible_databases))
+  idx <- {}
+  idx <- c(idx, grep(pattern=search_term, compatible_databases$annotation, ignore.case = TRUE))
+  idx <- c(idx, grep(pattern=search_term, compatible_databases$genome, ignore.case = TRUE))
+  idx <- c(idx,grep(pattern=search_term, compatible_databases$txdb, ignore.case = TRUE))
+  idx <- unique(idx)
+
+  if (length(idx))
+  {   compatible_databases <- compatible_databases[idx,] }
+  else
+  { warning("Could not find search term. Returning all entries")}
+
+  return(as.matrix(compatible_databases))
 }
 
 

@@ -4,36 +4,36 @@
 \alias{Compatible_Annotation_DBs}
 \title{Compatible_Annotation_DBs}
 \usage{
-Compatible_Annotation_DBs(list_commands = FALSE)
+Compatible_Annotation_DBs(search_term = "")
 }
 \arguments{
-\item{list_commands}{Boolean. By default this is FALSE and will return a dataframe of all
-compatible databases. When set to TRUE will return a list of commands that can be copied
-onto console which will download the appropriate databases (see example below).}
+\item{search_term}{: character string of a full or part name of a database.
+Will return only those entries that contain this search term. Not case
+sensitive.}
 }
 \value{
-Returns a list of installation commands for all compatible annotation databases
+Returns a list of compatible annotation databases
 }
 \description{
-Interogates bioconductor databases and identifies those that are compatible
+Interogates Bioconductor databases and identifies those that are compatible
 with Ularcirc. Builds a list of commands that the user can copy to install the
 required database on their local computer. Once installed the databases are
 immediately available to Ularcirc upon re-starting the shiny app.
 This function requires connection to the internet.
 }
 \examples{
-# Get all bioconductor annotation databases that are compatible with Ularcirc
+# Get all Bioconductor annotation databases that are compatible with Ularcirc
 library('BSgenome')
 library('httpuv')
 library('AnnotationHub')
 # Prepare a dataframe of all compatible annotation databases
-all_db_df <- Compatible_Annotation_DBs()
+compatible_DBs <- Compatible_Annotation_DBs()
+comatile_DBs_human <- Compatible_Annotation_DBs("Hsapiens")
 
-# Prepare a list of R commands that users can copy paste to download
-# and install annotation databases on local machine
-db_download_commands <- Compatible_Annotation_DBs(list_commands = TRUE)
+# Example of how to find a relevant database and load the relevant databases:
+# This example find hg38 databases
+idx <- grep(pattern="hg38", x= compatible_DBs[,"genome"])
+source("http://bioconductor.org/biocLite.R")
+biocLite(c(compatible_DBs[idx,]))
 
-# Select a database and display the commands needed to install
-# Use noquote to correctly format output
-\donttest{ noquote(db_download_commands$Hsapiens.UCSC.hg38) }
 }
