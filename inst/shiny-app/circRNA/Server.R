@@ -233,22 +233,41 @@ Prepare_Gene_Object <- function(GeneName, BS_Junctions, GeneList, File_idx = c(-
     return(NULL)
   }
 
-  a <- try(select(GeneList$Annotation_Library, keys = GeneName, columns=c("ENTREZID", "SYMBOL"),keytype="SYMBOL"),silent=TRUE)
+  a <- try(select(GeneList$Annotation_Library, keys = GeneName, columns=c("ENTREZID", "SYMBOL", "ENSEMBL"),keytype="SYMBOL"),silent=TRUE)
+  lookupID <- a$ENTREZID   # Default lookup
   if (length(grep(pattern="Error", x=a)))
-  { warning("Cannot retrieve genomic information for this gene")
+  {
+    showModal(modalDialog(title="Cannot retrieve genomic information for this gene",
+            "Please check that you have loaded correct annotation database.
+             Nothing will be displayed.",easyClose=TRUE,footer=NULL))
     return ( NULL )
   }
 
 
   if (length(which(keys(GeneList$transcript_reference) == a$ENTREZID) ) == 0)
-  {  warning("Cannot retrieve genomic information for this gene")
+  {
+    if (length(which(keys(GeneList$transcript_reference) == a$ENSEMBL) ) == 0)
+    {
+      ExampleGeneIDs <- head(keys(GeneList$transcript_reference))
+      showModal(modalDialog(title="Cannot retrieve or convert genomic information for this gene",
+                            "For some reason this gene does not have an entry. If you are seeing this for
+                            multiple entries please contact let developer know so we can look into it.
+                            Nothing will be displayed.",easyClose=TRUE,footer=NULL))
+
+
       return ( NULL )
-  }   # No additional data available, will have to ignore this entry unfortunately.
-	b <- select(GeneList$transcript_reference, keys = a$ENTREZID, columns=c('GENEID', 'TXCHROM', 'EXONSTART',  'EXONEND','TXID', 'EXONSTRAND'),keytype="GENEID")
+
+    }
+    else
+      lookupID <- a$ENSEMBL
+
+  }
+
+	b <- select(GeneList$transcript_reference, keys = lookupID, columns=c('GENEID', 'TXCHROM', 'EXONSTART',  'EXONEND','TXID', 'EXONSTRAND'),keytype="GENEID")
 	b <- b[,c("TXCHROM","EXONSTART","EXONEND","TXID","EXONSTRAND")]
 	names(b) <- c('chrom', 'start', 'stop', 'gene','strand')
 	b$score <- 0
-	#browser()
+
 	if (names(table(b$strand)) == "-") #(b$strand[1]== "-")
 	{ b$strand <- 0 }
 	else
@@ -282,7 +301,8 @@ Prepare_Gene_Object <- function(GeneName, BS_Junctions, GeneList, File_idx = c(-
 	else             # Positive strand as assigned by reference transcript
 	   strand = 1
 
-	Transcript_Canonical_juncs = Canonical_Junctions[chrom1 == chrom & start1 > chromstart & end2 < chromend &   strand1 == strand & DataSet==File_idx,]
+	Transcript_Canonical_juncs = Canonical_Junctions[chrom1 == chrom & start1 > chromstart &
+	                                                   end2 < chromend &   strand1 == strand & DataSet %in% File_idx,]
 
 	return (list(Transcript=Transcript, Junctions=Junctions, Transcript_Canonical_juncs= Transcript_Canonical_juncs))
 }
@@ -956,8 +976,6 @@ BS_Junc_details <- function(JuncCoords)
 ##
 Annotate_BS_Junc<- function(DataSet, GeneList, MaxDisplay = 15, Library_Strand = "", OnlyAnnotated="FALSE")
 {
-
-
 	if (nrow(DataSet) < MaxDisplay)
 		MaxDisplay <- nrow(DataSet)
 
@@ -993,13 +1011,20 @@ Annotate_BS_Junc<- function(DataSet, GeneList, MaxDisplay = 15, Library_Strand =
 		  t_end <- findOverlaps(invertStrand(bs_junc_gr),g_GR, type=c("within"))
 
 		  entrezID <- c("Novel")
+	#	  browser()
 		  if ((length(t_start) > 0) && (length(t_end) > 0))
 		  {	 entrezID_start <- g_GR[subjectHits(t_start)]$gene_id
          entrezID_end <- g_GR[subjectHits(t_end)]$gene_id
          entrezID <- intersect(entrezID_start, entrezID_end)
          entrezID <- try(select(GeneList$Annotation_Library, keys = entrezID, columns=c("SYMBOL"),keytype="ENTREZID")[,'SYMBOL'],silent=TRUE) # Convert to Symbol
+
          if(length(grep(pattern = "Error in ", x = entrezID)))  # This is start of error message when lookup is not linked
-         {  entrezID <- c("Unknown")  }
+         {  entrezID <- intersect(entrezID_start, entrezID_end)
+            entrezID <- try(select(GeneList$Annotation_Library, keys = entrezID, columns=c("SYMBOL"),keytype="ENSEMBL"),silent=TRUE)
+            entrezID <- entrezID$SYMBOL
+            if(length(grep(pattern = "Error in ", x = entrezID)))
+            {    entrezID <- c("Unknown") }
+         }
 		  }
       DataSet$Gene[i] <- paste(unique(entrezID),collapse=",")
       incProgress(1/MaxDisplay, detail = paste("Updating Row ",i))
@@ -2598,10 +2623,13 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  }
   	  else
   	  { # Need to keep species initials: eg org.Hs.eg.db  to Hs
+  	    withProgress(message="Searching and populating installed compatible annotation libraries.", value=0, {
+
   	    Species_Initials <- gsub(pattern = ".eg.db", replacement = "" ,x = gsub(pattern = "org.", replacement = "", x = input$Annotation_lib))
   	    Species_Genome <- List_Species_Files$GenomeOptions[grep(pattern = Species_Initials, x = List_Species_Files$GenomeOptions)]
         w <- ""
   	    w <- paste(w,selectizeInput("Species_Genome",label="Genome release",choices = Species_Genome, selected=Species_Genome[1]))
+  	    }) # withProgress
   	  }
       HTML(w)
   	})
