@@ -7,7 +7,7 @@ Author and maintainer: David Humphreys (d.humphreys  at      victorchang  dot   
 Pre-print for [Ularcirc now on bioarchives](https://www.biorxiv.org/content/early/2018/05/15/318436). 
 
 # Installation
-You can install Ularcirc using the 'devtools' package
+You can install Ularcirc using the 'devtools' package. Note: Towards the end of 2018 Ularcirc will also be part of bioconductor. 
 
     > install.packages("devtools")
     > library(devtools)
@@ -17,13 +17,17 @@ Ularcirc can annotate circRNA with overlapping gene information. This is obtaine
 bioconductor databases. Use the following command to identify what databases to download:
 
     > library("Ularcirc")
-    > all_dbs <- Compatible_Annotation_DBs()
-    > # List database IDs
-    > names(all_dbs)
-    >
-    > # Select a database and display the commands needed to install
-    > # Use noquote to correctly format output
-    > noquote(all_dbs[['Hsapiens.UCSC.hg38']])
+    > all_dbs <- Compatible_Annotation_DBs() # This will return all compatible databases
+    > mmu_dbs <- Compatible_Annotation_DBs(search_term = 'mm10') # returns mm10 compatible databases
+    > # Lets see what is stored in mmu_dbs
+    > mmu_dbs
+   annotation     genome                         txdb                                
+16 "org.Mm.eg.db" "BSgenome.Mmusculus.UCSC.mm10" "TxDb.Mmusculus.UCSC.mm10.ensGene"  
+17 "org.Mm.eg.db" "BSgenome.Mmusculus.UCSC.mm10" "TxDb.Mmusculus.UCSC.mm10.knownGene"
+    
+    > # Now lets download all of the above databases
+    > source("http://bioconductor.org/biocLite.R")   # Make sure R is looking at bioconductor repository
+    > biocLite(c(mmu_dbs))
     
     
 To start Ularcirc shiny app
