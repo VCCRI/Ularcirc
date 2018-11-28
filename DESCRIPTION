@@ -13,7 +13,7 @@ biocViews: DataRepresentation,Visualization, Genetics, Sequencing, Annotation,
 License: file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 3.5.0)
+Depends: R (>= 3.4.0)
 Imports: data.table (>= 1.9.4), shiny, shinyFiles, gsubfn, Biostrings, 
          GenomicFeatures, GenomeInfoDb, GenomeInfoDbData, Sushi, moments,
          DT, yaml, AnnotationHub, BSgenome, httpuv, mirbase.db
