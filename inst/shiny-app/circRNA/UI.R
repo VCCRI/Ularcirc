@@ -4,7 +4,6 @@ library(data.table)
 library(shinyFiles)
 library(DT)
 
-
 options(shiny.maxRequestSize=900*1024^2)  # Set upper limit at 900MB
 
 List_Saved_Projects<-function()

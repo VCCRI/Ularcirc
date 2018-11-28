@@ -247,7 +247,6 @@ knitr::include_graphics('BackspliceJunctionORF.PNG')
 
 For microRNA binding site analysis Ularcirc can analyse the predicted circRNA sequence. By default Ularcirc searches for complementary 7nt miRNA seed sequence that exist within the circRNA. There are options to increase or descrease the definition of the miRNA seed in a pull down menu. Ularcirc by default will only display miRNA bindings sites that are found at least two times. This threshold can also be modified via a pulldown menu as shown in the figure below. 
 
-
 ```{r HG38Slc8a1_miRNA, out.width='65%', fig.cap = 'Ularcirc Junction view tab showing potential miRNA binding sites that reside within Slc8a1',echo=FALSE}
 knitr::include_graphics('BackspliceJunction_miRNA.PNG')
 ```

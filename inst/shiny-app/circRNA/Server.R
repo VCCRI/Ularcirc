@@ -2239,7 +2239,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
     	  miR_positions <- round(Binding_Report/nchar(as.character(circRNA_Sequence)) *360,0)  # Coordinates
     	  miR_length <- round(25/nchar(as.character(circRNA_Sequence)) *360,0)
 
-#	  browser()
+##	  browser()
     	  for (i in 1:length(miR_positions))
     	  {  if (miR_positions[i] > -1)
     	       draw.arc(xc=400,yc=400,r=370,w1= miR_positions[i], w2 = miR_positions[i] + miR_length, col = "black",lwd=4, draw_tick=FALSE, Internal_Labels=miR_IDs[[i]][1])	  # Draws miRNA binding site
