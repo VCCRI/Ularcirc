@@ -4,6 +4,7 @@ library(data.table)
 library(shinyFiles)
 library(DT)
 
+
 options(shiny.maxRequestSize=900*1024^2)  # Set upper limit at 900MB
 
 List_Saved_Projects<-function()
@@ -35,17 +36,13 @@ shinyUI(fluidPage(
   				br()), # 		    conditionalPanel('input.Setup_Options == "Load transcript database"',
 
 		    conditionalPanel('input.Setup_Options == "Load new data"',
-  			 	h4('DATA SETS',style="color:red"),
-	  			radioButtons("MultipleDataOption", "Multiple data options:",choices = c("Union","Intersection","Difference"), selected=c("Union")),
-
   				h4('FILTER OPTIONS:',style="color:red"),
 	  			checkboxInput('ChromosomeFilter', 'Same chromosomes:',TRUE),
 		  		conditionalPanel(condition ="input.ChromosomeFilter == true",
 		  	  sliderInput("GenomicDistance", "Chimeric genomic distance:",min = 10, max = 1000000, value = c(200,100000))),
 			  	checkboxInput('StrandFilter', 'Same strand:',TRUE),
 				  checkboxInput('CanonicalJuncs', 'DON\'T remove any canonical junctions',TRUE),
-				  sliderInput("Junction_abundance", "Junction threshold (counts):", min=0, max=100, value=1),
-				  sliderInput("RAD_filter", "Accepted RAD score", min=0, max=1, value=c(0.05,0.95)),
+
 	        fileInput('JunctionFile', 'Chimeric junction File(s)',multiple=TRUE),   # accept=c('text/csv', 'text/comma-separated-values,text/plain','.csv'),
 		      br()),   # conditionalPanel('input.Setup_Options == "Load new data"',
 
@@ -97,16 +94,28 @@ shinyUI(fluidPage(
 				conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"',
 				    #radioButtons("Annotation_Options",label="Choose how data should be tabulated",
 				    h4('Table Display Options',style="color:red"),
-				    selectizeInput("Annotation_Options",label="Data sets to analyse",
+				    selectizeInput("Annotation_Options",label="Data analysis mode",
 				        choices = c('Selected sample analysis','Grouped analysis')),
 				    uiOutput("TwoGroupCompareChoices"),             # This displays a selectizeInput menu for the possible group comparison combinations
 				    checkboxInput('Percent_of_Parent', 'Display % parent transcript:',FALSE),
-				    checkboxInput('Display_RAD_Score', "Apply RAD filter:",TRUE),
 				    checkboxInput('Annotate_with_GeneName', "Annotate with parental gene:",TRUE),
-				    actionButton("Annotate_Option_Submit_Button", "Annotate"),br(),
+				    checkboxInput('DisplayFilterOptions', "Display filter options:",FALSE),
+				    conditionalPanel('input.DisplayFilterOptions == true',
+  				    checkboxInput('Display_RAD_Score', "Apply RAD filter:",TRUE),
+	  			    sliderInput("RAD_filter", "Accepted RAD score", min=0, max=1, value=c(0,1)),
+  				    numericInput("RAD_count_threshold", "Minimum count to apply RAD score ", value=9, min = 1, max = 50, step = 1),
+  				    sliderInput("Apply_RAD_count", "Minimum count to apply RAD score ", min=0, max=1, value=c(0,1)),
+			  	    checkboxInput('Apply_FSJ_Filter', "Apply FSJ filter:",TRUE),
+				      sliderInput("FSJ_filter_count_range", "Range to apply FSJ support", min=0, max=50, value=c(0,10))
+				      # Perhaps provide options to set min/max count and minimum sample number
+				    ),
 				    selectizeInput("MAX_BS_juncs_to_annotate", label= "Number of BS junctions to display",choices= as.numeric(c("5","10","20","35","50","75","100","250","500","1000","2000","5000","20000")), selected=10),
-				    selectizeInput("Normalisation",label="Raw counts or CPM",choices = c("Raw counts","CPM"), selected=c("Raw counts")),
-				    br() ),
+				    selectizeInput("Normalisation",label="Raw counts or CPM",choices = c("Raw counts","CPM", "CPM_Gene"), selected=c("Raw counts")),
+  				  conditionalPanel('input.Annotation_Options == "Grouped analysis"',
+  				          selectizeInput("DisplayMode",label="Display mode",choices = c("Table", "PCA"), selected=c("Table"))
+  				          ),
+				    actionButton("Annotate_Option_Submit_Button", "Build table"),
+		    br() ),
 				br()
 			), #conditionalPanel
     conditionalPanel('input.PanelSelect == "Genome_View" && output.fileUploaded == true',
@@ -117,8 +126,8 @@ shinyUI(fluidPage(
             textInput('GenomeStrand_Input', 'Strand (+/-)'),
             actionButton("Update_Genome_Position","Navigate"),
             br(),
-            p("Slc8a1 in hg38 is captured between chr2:  40108472 - 40530305  "),
-            p("chr8:57303263-57324835"),p("chr5: 77000000 - 77100000"),p("MSTR.5271.1 ch13: 102349720 - 102359752 stand 2"),
+#            p("Slc8a1 in hg38 is captured between chr2:  40108472 - 40530305  "),
+#            p("chr8:57303263-57324835"),p("chr5: 77000000 - 77100000"),p("MSTR.5271.1 ch13: 102349720 - 102359752 stand 2"),
 #                 radioButtons("JunctionType", "Junction Type:",choices = c("Backsplice","Alternative Canonical","All"), selected=c("Backsplice")),
             checkboxInput('ShowGenomeCanonicalCountTable', 'Display forward canonical junction count data',FALSE),
             checkboxInput('ShowFSJ_Sequence', 'Display splice junction sequence',FALSE),
@@ -244,13 +253,15 @@ shinyUI(fluidPage(
 				conditionalPanel(condition = "output.fileUploaded == true",
 				  verbatimTextOutput("ShowDataSets_on_GeneView"),
 				  conditionalPanel('input.Display_Gene_View_Mode == "Display_Gene_Transcripts"',
-				      selectInput("GeneListDisplay", "Please wait while preparing gene list", choices = NULL),
+				      selectInput("GeneListDisplay", "Please wait while preparing gene list
+				                     (if this does not update please check that a database has been seected under setup tab)", choices = NULL),
 				      actionButton(inputId = "Update_Gene_of_Interest",label = "View Gene"),
 					    #uiOutput("DisplayGeneList"),
 					    plotOutput("distPlot"),
 
 					    conditionalPanel(condition = "input.ShowTranscriptTable == true ",
 					      h4('Transcript Table'),
+					      downloadButton('download_Transcript_Table','Download Transcript table' ),
 					      DT::dataTableOutput("TranscriptTable"),
 					      h5('Exon Table (populated once a row is selected from transcript table)'),
 						    DT::dataTableOutput("ExonTable")
@@ -258,23 +269,49 @@ shinyUI(fluidPage(
 
 					    conditionalPanel(condition = "input.ShowBSJunctionCountTable == true ",
 						    h5('Backsplice Junction table') ,
+						    downloadButton('download_BS_Junc_Count_Table','Download BSJ' ),
 						    DT::dataTableOutput("BS_Junction_Count_Table")
 					       ), # conditionalPanel(condition = "input.ShowBSJunctionCountTable == true "
 
 				 		  conditionalPanel(condition = "input.ShowCanonicalCountTable == true",
 			  		    h5('Canonical Junction table'),
+			  		    downloadButton('download_FSJ_Junc_Count_Table','Download FSJ' ),
 						    DT::dataTableOutput("CanonicalJunctionCountTable")
 		              ), # conditionalPanel(condition = "ShowCanonicalCountTable == true",
 
 					    br() ), #conditionalPanel('input.Display_Gene_View_Mode == "Display_Gene_Transcripts"',
 
 
+				  # Following conditionalPanel is set up based on previous menu settings shown below
+				  # selectizeInput("Annotation_Options",label="Data sets to analyse",
+				  #           choices = c('Selected sample analysis','Grouped analysis'))
 				  conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"',
-					   h4('Junction table'),
-					   DT::dataTableOutput("DisplayJunctionCountTable"),
+				      conditionalPanel('input.Annotation_Options == "Selected sample analysis"',
+    					  h4('Junction table of selected data sets'),
+    					  downloadButton('downloadSelectJunctionCountTable','Download' ),
+					      DT::dataTableOutput("DisplayJunctionCountTable"),
+					      br() ),
+				      conditionalPanel('input.Annotation_Options == "Grouped analysis"',
+				        # Following conditional Panel is set up based on previous menu setting shown below:
+				        # selectizeInput("DisplayMode",label="Display mode",
+				        #             choices = c("Table","Heat map", "Volcano plot"), selected=c("Table"))
+				        conditionalPanel('input.DisplayMode == "Table"',
+				          h4('Junction table of grouped data sets'),
+				          downloadButton('downloadGroupedJunctionCountTable','Download' ),
+				          DT::dataTableOutput("DisplayGroupJunctionCountTable"),
+				          br() ),
+				        conditionalPanel('input.DisplayMode == "Heat map"',
+				          h4('Heat map of grouped data sets'),
+				          plotOutput("DisplayGroupHeatMap"),
+				          br()),
+				        conditionalPanel('input.DisplayMode == "PCA"',
+				          h4('Principle components analysis (PCA)'),
+				          plotOutput("DisplayBSJ_PCA"),
+				        #  DT::dataTableOutput("DisplayJunctionCountTable"),
+				          br() ),
+				        br() ),
+
 					   br() ),
-
-
 
 					br() )
 
@@ -323,7 +360,8 @@ shinyUI(fluidPage(
 					h3('No file loaded, go back to "Setup" tab and load a data set',style="color:red"),
 					br()),
 
-				conditionalPanel(condition = "output.fileUploaded == true",
+				conditionalPanel(condition = "output.fileUploaexport(UTR_3p[Multi_UTR_3p_idx], 'c:/temp/multi_3p.gtf')
+ded == true",
 				  verbatimTextOutput("ShowDataSets_on_JunctionView"),
 				  conditionalPanel('input.Junction_View_Mode == "Backsplice"',
   					uiOutput("DisplayBS_sequence_details"),
