@@ -1,4 +1,19 @@
-CHANGES IN VERSION 1.1.0
+
+Version 1.2.2
+-------------------------
+NEW FEATURES
+
+    o Can now accept CIRI2 and circExplorer inputs
+    o Automatically group samples upon import
+
+
+Version 1.2.1
+-------------------------
+BUG FIXES
+    o BUG fix: when user selects table entry from group data it now is automatically selected in gene view
+
+
+CHANGES IN VERSION 1.2.0
 -------------------------
 
 NEW FEATURES

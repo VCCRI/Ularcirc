@@ -263,6 +263,7 @@ shinyUI(
 				  # Display option of what datasets to display
 
 				  checkboxInput("DataSourceOptions", "Show data source options", TRUE),
+#          checkboxGroupInput("DataSourceOptions", choices=c("Show data source options","Show sample IDs"), choiceValues=TRUE, inLine=TRUE),
 				  fluidRow(
 				    shinydashboard::box(id="box1", background="red",  solidHeader = F, collapsible = F,
 				      uiOutput("DisplayDataSetButtons")

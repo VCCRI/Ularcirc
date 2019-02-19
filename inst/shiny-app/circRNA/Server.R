@@ -631,11 +631,13 @@ normalise_raw_counts <- function(rawData, colIDs="Freq", readsPerGene, LibrarySt
       { Gene_Counts <- colSums(readsPerGene[-1:-5,2:5]) # remove header
 
         if (LibraryStrandType == "Unstranded")
-        {  toDisplay$CPM_GENE[,col_idx[i]] <- toDisplay$RAW[,col_idx[i]]/Gene_Counts["unstranded"]  }
+        {  toDisplay$CPM_GENE[,col_idx[i]] <- toDisplay$RAW[,col_idx[i]]/Gene_Counts["unstranded"]    }
         if (LibraryStrandType == "Opposing strand")
-        {  toDisplay$CPM_GENE[,col_idx[i]] <- toDisplay$RAW[,col_idx[i]]/Gene_Counts["Rstrand"]  }
+        {  toDisplay$CPM_GENE[,col_idx[i]] <- toDisplay$RAW[,col_idx[i]]/Gene_Counts["Rstrand"]   }
         if (LibraryStrandType == "Same Strand")
-        {  toDisplay$CPM_GENE[,col_idx[i]] <- toDisplay$RAW[,col_idx[i]]/Gene_Counts["Fstrand"] }
+        {  toDisplay$CPM_GENE[,col_idx[i]] <- toDisplay$RAW[,col_idx[i]]/Gene_Counts["Fstrand"]   }
+        toDisplay$CPM_GENE[,col_idx[i]] <- round(toDisplay$CPM_GENE[,col_idx[i]] * 10000000,3)
+
       }
       else
       {    toDisplay$CPM_GENE$Freq <- 0}
@@ -1871,7 +1873,7 @@ debug(debugme)
 
       if (input$BSJ_data_source == "CircExplorer2")
       {
-        subsetted_by_sample <- subset(Ularcirc_data$ProjectData$ext_BSJ_output$CE2_data,DataSet == idx[[1]])
+        subsetted_by_sample <- subset(Ularcirc_data$ProjectData$ext_BSJ_output$CE2_data,DataSet %in% idx[[1]])
         temp <- group_by(subsetted_by_sample, geneSymbol, BSjuncName,  strandDonor)
         temp <- summarise(temp,total=sum(Freq))
         SubsettedData<- data.table(Gene=temp$geneSymbol, Freq=temp$total, BSjuncName=temp$BSjuncName, strandDonor=temp$strandDonor)
@@ -1907,7 +1909,6 @@ debug(debugme)
     if ((length(grep(pattern = "Grouped", x = input$Annotation_Options)) > 0)   # Prepare comparison table
         && (! is.null(PrepareGroupOptions())) )   # Check there are groups defined. There should be always at least one.
     {
-#browser()
       AllGroupIDs <- paste("Group",seq(from=1, to=input$Number_BiologicalSamples, by=1),sep="_")
       inFile = Ularcirc_data$ProjectData$SampleIDs      # This contains all possible input files (samples)
       a<- length(Groupings$SampleNames)
@@ -1948,7 +1949,6 @@ debug(debugme)
           temp <- group_by(subsetted_by_sample, geneSymbol, BSjuncName,  strandDonor)
         }
 
-
         temp <- summarise(temp,total=sum(Freq))
         SubsettedData <- data.table(Gene=temp$geneSymbol, Freq=temp$total, BSjuncName=temp$BSjuncName, strandDonor=temp$strandDonor)
         colnames(SubsettedData) <- c(paste("Gene_",i,sep=""), paste("Freq_",i,sep=""), "BSjuncName",
@@ -1961,8 +1961,6 @@ debug(debugme)
 
       } # for(i in 1:a)
 
-
- #     browser()
     toDisplay <- as.data.frame(Reduce(function(x, y) merge(x, y, by="BSjuncName",all.x=TRUE), GroupData))
     # toDisplay is now a table of multiples of 4 columns. Every third column is the count.
     # Column 1 2 3 4  are BSJ ID, Gene ID, Count, strand.
@@ -1973,23 +1971,20 @@ debug(debugme)
     colnames(toDisplay) <- c("BSjuncName","Gene",Groupings$SampleNames)
     toDisplay[is.na(toDisplay)] <- 0
     if (input$BSJ_data_source == "CircExplorer2")
-    {
-      Ularcirc_data$External_BSJ_GroupedDataSet$CE2 <-  normalise_raw_counts(rawData=toDisplay,
+    { Ularcirc_data$External_BSJ_GroupedDataSet$CE2 <-  normalise_raw_counts(rawData=toDisplay,
                                                            colIDs = Groupings$SampleNames,
                                                            Ularcirc_data$ProjectData$ReadsPerGene_Data,
                                                            input$LibraryStrandType)
     }
     else if (input$BSJ_data_source == "CIRI2")
-    {
-      Ularcirc_data$External_BSJ_GroupedDataSet$CIRI <-  normalise_raw_counts(rawData=toDisplay,
+    { Ularcirc_data$External_BSJ_GroupedDataSet$CIRI <-  normalise_raw_counts(rawData=toDisplay,
                                                                              colIDs = Groupings$SampleNames,
                                                                              Ularcirc_data$ProjectData$ReadsPerGene_Data,
                                                                              input$LibraryStrandType)
-
-      }
     }
+  } # if ((length(grep(pattern = "Grouped",
 
-  })
+})
 
 
 	#########################################3
@@ -2696,9 +2691,6 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	  if (is.null(Ularcirc_data$External_BSJ_GroupedDataSet))  # If not data is assembled
 	  { return(data.frame(c(ACTION_REQUIRED="Please select build table on left hand tab"))); }
 
-
-	  toDisplay <- data.frame(c(ERROR="Cannot build data sets. Please check files have been selected and try again"))
-
 	  if (input$BSJ_data_source == "CircExplorer2")
 	  {
 	    if (input$Normalisation == "Raw counts")
@@ -2717,6 +2709,15 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	    toDisplay <- Ularcirc_data$External_BSJ_GroupedDataSet$CIRI$CPM_GENE
   	  else
   	    toDisplay <- Ularcirc_data$External_BSJ_GroupedDataSet$CIRI$CPM
+	  }
+
+	  if (! is.null(toDisplay))
+	  {
+	    order_idx <- order(toDisplay[,3],decreasing = TRUE)
+	    toDisplay <- toDisplay[order_idx,]
+	  }
+	  else
+	  { toDisplay <- data.frame(c(ACTION_REQUIRED="No data assembled. Press build table to proceed."))
 	  }
 
 	  datatable(toDisplay, selection = 'single', options = list(lengthMenu = c(10,50,500,5000), pageLength = 15))
