@@ -184,6 +184,10 @@ draw.text.w <- function(xc, yc, r, w, n, col="black", cex=1){
   text(x,y,labels=n, col=col, cex=cex);
 }
 
+jsBOXcode <- " shinyjs.collapse = function(boxid)
+    { $('#' + boxid).closest('.box').find('[data-widget=collapse]').click();
+    }"
+
 
 
 List_Species_Files <- List_Genomes()
@@ -192,3 +196,5 @@ List_Species_Files <- List_Genomes()
 # i.e. Gene start/stop +- this distance
 zoomOffset <- 50000
 
+FileTypeCounts <- list(CIRI=0,CE2=0, STAR_BSJ=0, STAR_FSJ=0, QORTS=0, REGTOOLS=0)  # Keeps track of loaded data files
+# Groupings <- list()

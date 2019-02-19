@@ -1,4 +1,6 @@
 library(shiny)
+library(shinydashboard)
+library(shinyjs)
 library(Sushi)
 library(data.table)
 library(shinyFiles)
@@ -16,10 +18,13 @@ List_Saved_Projects<-function()
 }
 
 # Define UI for dataset viewer application
-shinyUI(fluidPage(
-
-  # Application title
+shinyUI(
+  fluidPage(
+    useShinyjs(),
   titlePanel("UlarCirc : Analysing & Visualising Circular and linear RNA"),
+
+#  dashboardPage(
+ #  dashboardHeader(),
 
   sidebarLayout(
     sidebarPanel(
@@ -64,7 +69,7 @@ shinyUI(fluidPage(
                     h4('LOAD',style="color:blue"),
                     selectizeInput("LoadExistingProject",label="Choose an pre-existing project",choices =  List_Saved_Projects()),
                     actionButton("LoadProjectRequest","LOAD"),
-                    sliderInput("Number_BiologicalSamples", "Number of biological treatments in data set:",min = 1, max = 10, value = 1),
+                  #  sliderInput("Number_BiologicalSamples", "Number of biological treatments in data set:",min = 1, max = 10, value = 1),
                     uiOutput("DisplayGroupNames"),
                     br()
                       ),
@@ -94,13 +99,17 @@ shinyUI(fluidPage(
 				conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"',
 				    #radioButtons("Annotation_Options",label="Choose how data should be tabulated",
 				    h4('Table Display Options',style="color:red"),
-				    selectizeInput("Annotation_Options",label="Data analysis mode",
-				        choices = c('Selected sample analysis','Grouped analysis')),
+				   # selectizeInput("Annotation_Options",label="Data analysis mode",
+				    #    choices = c('Selected sample analysis','Grouped')),
+				     radioButtons("Annotation_Options",label="Data analysis mode", choices = c('Selected','Grouped'), inline=TRUE),
 				    uiOutput("TwoGroupCompareChoices"),             # This displays a selectizeInput menu for the possible group comparison combinations
-				    checkboxInput('Percent_of_Parent', 'Display % parent transcript:',FALSE),
-				    checkboxInput('Annotate_with_GeneName', "Annotate with parental gene:",TRUE),
-				    checkboxInput('DisplayFilterOptions', "Display filter options:",FALSE),
-				    conditionalPanel('input.DisplayFilterOptions == true',
+
+				    conditionalPanel('input.BSJ_data_source =="STAR"',
+				      checkboxInput('Percent_of_Parent', 'Display % parent transcript:',FALSE),
+				      checkboxInput('Annotate_with_GeneName', "Annotate with parental gene:",TRUE),
+				      checkboxInput('DisplayFilterOptions', "Display filter options:",FALSE)
+				    ),
+					    conditionalPanel('input.DisplayFilterOptions == true',
   				    checkboxInput('Display_RAD_Score', "Apply RAD filter:",TRUE),
 	  			    sliderInput("RAD_filter", "Accepted RAD score", min=0, max=1, value=c(0,1)),
   				    numericInput("RAD_count_threshold", "Minimum count to apply RAD score ", value=9, min = 1, max = 50, step = 1),
@@ -111,10 +120,10 @@ shinyUI(fluidPage(
 				    ),
 				    selectizeInput("MAX_BS_juncs_to_annotate", label= "Number of BS junctions to display",choices= as.numeric(c("5","10","20","35","50","75","100","250","500","1000","2000","5000","20000")), selected=10),
 				    selectizeInput("Normalisation",label="Raw counts or CPM",choices = c("Raw counts","CPM", "CPM_Gene"), selected=c("Raw counts")),
-  				  conditionalPanel('input.Annotation_Options == "Grouped analysis"',
+  				  conditionalPanel('input.Annotation_Options == "Grouped"',
   				          selectizeInput("DisplayMode",label="Display mode",choices = c("Table", "PCA"), selected=c("Table"))
   				          ),
-				    actionButton("Annotate_Option_Submit_Button", "Build table"),
+				    actionButton("buildTable_Button", "Build table"),
 		    br() ),
 				br()
 			), #conditionalPanel
@@ -251,12 +260,20 @@ shinyUI(fluidPage(
 					br()),
 
 				conditionalPanel(condition = "output.fileUploaded == true",
-				  verbatimTextOutput("ShowDataSets_on_GeneView"),
+				  # Display option of what datasets to display
+
+				  checkboxInput("DataSourceOptions", "Show data source options", TRUE),
+				  fluidRow(
+				    shinydashboard::box(id="box1", background="red",  solidHeader = F, collapsible = F,
+				      uiOutput("DisplayDataSetButtons")
+				      ),
+				    verbatimTextOutput("ShowDataSets_on_GeneView")
+				  ),
+
 				  conditionalPanel('input.Display_Gene_View_Mode == "Display_Gene_Transcripts"',
-				      selectInput("GeneListDisplay", "Please wait while preparing gene list
-				                     (if this does not update please check that a database has been seected under setup tab)", choices = NULL),
-				      actionButton(inputId = "Update_Gene_of_Interest",label = "View Gene"),
-					    #uiOutput("DisplayGeneList"),
+				      selectInput("GeneListDisplay", NULL, choices = NULL),
+				      actionButton(inputId = "Update_Gene_of_Interest",label = "Select Gene"),
+					   # uiOutput("DisplayDataSetButtons"),  # To display Ularcirc | circExplorer or other input data sets
 					    plotOutput("distPlot"),
 
 					    conditionalPanel(condition = "input.ShowTranscriptTable == true ",
@@ -284,21 +301,33 @@ shinyUI(fluidPage(
 
 				  # Following conditionalPanel is set up based on previous menu settings shown below
 				  # selectizeInput("Annotation_Options",label="Data sets to analyse",
-				  #           choices = c('Selected sample analysis','Grouped analysis'))
+				  #           choices = c('Selected','Grouped analysis'))
 				  conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"',
-				      conditionalPanel('input.Annotation_Options == "Selected sample analysis"',
-    					  h4('Junction table of selected data sets'),
-    					  downloadButton('downloadSelectJunctionCountTable','Download' ),
-					      DT::dataTableOutput("DisplayJunctionCountTable"),
+				      conditionalPanel('input.Annotation_Options == "Selected"',
+    					  #h4('Junction table of selected data sets'),
+    					  uiOutput("BSJ_count_table_header"),
+    					  conditionalPanel('input.BSJ_data_source =="STAR"',
+      					  downloadButton('downloadSelectJunctionCountTable','Download' ),
+	  				      DT::dataTableOutput("DisplayJunctionCountTable")
+      					  ),
+    					  conditionalPanel('input.BSJ_data_source !="STAR"',
+    					     DT::dataTableOutput("Display_externalBSJ_CountTable")
+    					     ),
 					      br() ),
-				      conditionalPanel('input.Annotation_Options == "Grouped analysis"',
+				      conditionalPanel('input.Annotation_Options == "Grouped"',
 				        # Following conditional Panel is set up based on previous menu setting shown below:
 				        # selectizeInput("DisplayMode",label="Display mode",
 				        #             choices = c("Table","Heat map", "Volcano plot"), selected=c("Table"))
 				        conditionalPanel('input.DisplayMode == "Table"',
 				          h4('Junction table of grouped data sets'),
-				          downloadButton('downloadGroupedJunctionCountTable','Download' ),
-				          DT::dataTableOutput("DisplayGroupJunctionCountTable"),
+				          conditionalPanel('input.BSJ_data_source =="STAR"',
+  				          downloadButton('downloadGroupedJunctionCountTable','Download' ),
+	  			          DT::dataTableOutput("DisplayGroupJunctionCountTable")
+				          ),
+				          conditionalPanel('input.BSJ_data_source !="STAR"',
+                  #  downloadButton('downloadGroupedJunctionCountTable','Download' ),
+				            DT::dataTableOutput("Display_externalBSJ_GroupCountTable")
+				          ),
 				          br() ),
 				        conditionalPanel('input.DisplayMode == "Heat map"',
 				          h4('Heat map of grouped data sets'),
