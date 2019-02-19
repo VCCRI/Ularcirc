@@ -856,8 +856,8 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
     SampleList[listID] <- IDs[i]
 	 } # 	for (i in 1: length(IDs))
 
-
-  Groupings$SampleNames <- SampleList
+#browser()
+ # Groupings$SampleNames <- SampleList
 
 }) # withProgress
 
@@ -1822,7 +1822,16 @@ debug(debugme)
 			 CanonicalJuncs=input$CanonicalJuncs,
 			SubSelect= SubsetInputData, input=input)
 
-#		return(Ularcirc_data$ProjectData)
+
+		groupList <- list()
+    for (i in 1:length(Ularcirc_data$ProjectData$SampleIDs))
+    {
+      ID <- paste("Group_",i,sep="")
+      groupList[ID] <-  Ularcirc_data$ProjectData$SampleIDs[i]
+    }
+		Groupings$SampleNames <- groupList
+
+		return(Ularcirc_data$ProjectData)
 	})
 
 	  observe({     # The following code ensure the annotate with gene name does NOT get selected when no genome selected
@@ -1942,6 +1951,8 @@ debug(debugme)
 
         temp <- summarise(temp,total=sum(Freq))
         SubsettedData <- data.table(Gene=temp$geneSymbol, Freq=temp$total, BSjuncName=temp$BSjuncName, strandDonor=temp$strandDonor)
+        colnames(SubsettedData) <- c(paste("Gene_",i,sep=""), paste("Freq_",i,sep=""), "BSjuncName",
+                                     paste("strandDonor_",i,sep=""))
         GroupData[[i]] <- SubsettedData
       #  if (i == 1)
       #    allBSJ_IDs <- GroupData[[1]]$BSjuncName
@@ -1949,6 +1960,9 @@ debug(debugme)
           allBSJ_IDs <- unique(union(allBSJ_IDs, GroupData[[i]]$BSjuncName))
 
       } # for(i in 1:a)
+
+
+ #     browser()
     toDisplay <- as.data.frame(Reduce(function(x, y) merge(x, y, by="BSjuncName",all.x=TRUE), GroupData))
     # toDisplay is now a table of multiples of 4 columns. Every third column is the count.
     # Column 1 2 3 4  are BSJ ID, Gene ID, Count, strand.
