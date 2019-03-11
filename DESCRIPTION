@@ -17,7 +17,7 @@ Depends: R (>= 3.4.0)
 Imports: data.table (>= 1.9.4), shiny, shinyFiles, gsubfn, Biostrings, 
          GenomicFeatures, GenomeInfoDb, GenomeInfoDbData, Sushi, moments,
          DT, yaml, AnnotationHub, BSgenome, httpuv, mirbase.db, ggplot2, 
-         ggrepel, shinydashboard
+         ggrepel, shinydashboard, shinyjs 
 RoxygenNote: 6.0.1
 Suggests: knitr,
     rmarkdown
