@@ -145,7 +145,7 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
   a <- GeneObject$Transcript
   display_transcript <- data.frame(chrom=a$chrom, start=as.numeric(a$start), stop=as.numeric(a$stop), gene=a$gene, score=as.numeric(a$score),
                                         strand=as.numeric(a$strand), type=a$type)
-  if (display_transcript$strand == 0)
+  if (display_transcript$strand[1] == 0)
   { display_transcript$strand <- -1 }
 
 
@@ -167,11 +167,15 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
 	  color_to_graph <- rep(1,nrow(bedJunctions))
 	  if (! is.null(Junction_highlight$Canonical$Chr))
 	  {
-	    BSjunc_idx <- bedJunctions[(chrom1 == as.character(Junction_highlight$Canonical$Chr)) &
-	                     (start1 == as.numeric(Junction_highlight$Canonical$Start)) &
-	                 (end2 == as.numeric(Junction_highlight$Canonical$End)),which = TRUE]
+	    BSjunc_idx <- bedJunctions[(chrom == as.character(Junction_highlight$Canonical$Chr)) &
+	                     (start == as.numeric(Junction_highlight$Canonical$Start)) &
+	                 (end == as.numeric(Junction_highlight$Canonical$End)),which = TRUE]
 	    color_to_graph[BSjunc_idx] <- 2      # Colour user selected junction; 2= red; 3 = light green ; 5 = light blue
 	  }
+	  # chrom1 start1 end1 chrom2 start2 end2 name score strand1 strand2 samplenumber
+
+	  bedJunctions <- bedJunctions[,.(chrom, start, start, chrom, end, end, name, score, strand, strand)]
+	  setnames(bedJunctions,1:10,c("chrom1","start1", "end1", "chrom2", "start2", "end2", "name", "score", "strand1", "strand2"))
 
 	  pbpe = plotBedpe(bedJunctions, chrom, chromstart, chromend, heights = bedJunctions$score, plottype="loops", color = color_to_graph)
 	  labelgenome(chrom, chromstart,chromend,n=3,scale="Mb")
@@ -322,13 +326,16 @@ Prepare_Gene_Object <- function(GeneName, BS_Junctions, GeneList, File_idx = c(-
 	Junctions <- circJunctions(BS_Junctions ,chrom, chromstart, chromend,fileID=File_idx)
 
 	### Filter canonical junctions within transcript
-	if (strand == 0)  # negative strand as assigned by reference transcript
+	if (strand[1] == 0)  # negative strand as assigned by reference transcript
 	   strand = 2
 	else             # Positive strand as assigned by reference transcript
 	   strand = 1
 
-	Transcript_Canonical_juncs = Canonical_Junctions[chrom1 == chrom & start1 > chromstart &
-	                                                   end2 < chromend &   strand1 == strand & DataSet %in% File_idx,]
+	chrom_ <- chrom # so we don't confuse the following subset
+	strand_ <- strand
+	Transcript_Canonical_juncs = Canonical_Junctions[chrom == chrom_ & start > chromstart &
+	                                                   end < chromend &   strand == strand_ & DataSet %in% File_idx,]
+
 
 	return (list(Transcript=Transcript, Junctions=Junctions, Transcript_Canonical_juncs= Transcript_Canonical_juncs))
 }
@@ -619,7 +626,7 @@ normalise_raw_counts <- function(rawData, colIDs="Freq", readsPerGene, LibrarySt
 
 
   for (i in 1:length(col_idx))
-  {
+  { #browser()
     toDisplay$TOTAL_COUNTS <- sum(toDisplay$RAW[,col_idx[i]])
     toDisplay$CPM[,col_idx[i]] <- round((toDisplay$RAW[,col_idx[i]] / toDisplay$TOTAL_COUNTS * 1000000),2)
 #    toDisplay$CPM$Freq <- round((toDisplay$RAW[,col_idx[i]] / toDisplay$TOTAL_COUNTS * 1000000),2)
@@ -678,10 +685,9 @@ LoadJunctionData <- function(filename, ChromFilter, StrandFilter, Genomic_Distan
 	}
 
 	# Make dummy entries, this will ensure the data structure exists for Ularcirc.
-	Canonical_AllData <- data.table(chrom1="chr1",start1=1,end1=1,
-	                                chrom2="chr1",start2=11,end2=11,
-	                                name="chr1", score=1,strand1=2,strand2=2,
-	                                multimappers=1,overhang=1, DataSet=1)
+	Canonical_AllData <- data.table(chrom="chr1",start=1,end=1,
+	   	                            name="chr1", score=1,strand=2, DataSet=1)
+	                                #multimappers=1,overhang=1, DataSet=1)
 	ReadsPerGene_Data <- data.table(geneName="blank",unstranded=1,
 	                                Fstrand=1,Rstrand=1, DataSet=1)
 	DataType <- c("Unknown")
@@ -698,10 +704,11 @@ LoadJunctionData <- function(filename, ChromFilter, StrandFilter, Genomic_Distan
 	filename_idx <- c(filename_idx, grep(pattern = "\\.ciri(.gz|)$", x = filename$name))
 
 	failed_IDs <- setdiff(filename$name, filename$name[filename_idx])
-
+#browser()
 	# Trim extensions of all acceptible filetypes, will use as names throughout Ularcirc experience.
 	IDs <- unique(gsub(pattern="\\.Chimeric.out.junction(.gz|)$",replacement="",x=filename$name[filename_idx]))
 	IDs <- unique(gsub(pattern="\\.SJ.out.tab(.gz|)$",replacement="",x=IDs))
+	IDs <- unique(gsub(pattern="\\.rtSJ.out.tab(.gz|)$",replacement="",x=IDs))
 	IDs <- unique(gsub(pattern="\\.ReadsPerGene.out.tab(.gz|)$",replacement="",x=IDs))
 	IDs <- unique(gsub(pattern="\\.ce2(.gz|)$",replacement="",x=IDs))
 	IDs <- unique(gsub(pattern="\\.ciri(.gz|)$",replacement="",x=IDs))
@@ -769,12 +776,13 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 	    n_UniqueJunctions_PostFilt=0
 	  }
 
-	  ######## READ in FSJ counts ##############
+	  ######## READ in STAR FSJ counts ##############
 	  incProgress(1/(length(IDs)*2), detail = paste("Loading FSJ for file number ", i))
 	  Linear_Idx <- grep(pattern=paste(IDs[i],".SJ.out.tab(.gz|)",sep=""), x=filename$name )
 	  if (length(Linear_Idx) > 0)
 	  { FileTypeCounts$STAR_FSJ <<- FileTypeCounts$STAR_FSJ + 1
 	    data_set <- fread(filename$datapath[Linear_Idx[1]], sep="\t")
+
 	    if (ncol(data_set) == 9)            # Linear Junction data file from STAR aligner
 	    { IDs_idx <- c(IDs_idx, IDs[i])
 	      DataType <- c("Canonical")
@@ -782,9 +790,8 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 	      # c("chrom1","start1","end1","strand","intron_motif", "annotated", "unique_counts", "multi_mapped_counts", "overhang")
 	      ## Need to convert it to the following
 	      # chrom1   start1     end1 chrom2   start2     end2   name score  strand1 strand2
-	      data_set <- data_set[,.(V1,V2,V2, V1,V3,V3,   V1,  V7, V4, V4,V8 ,V9)]
-	      setnames(data_set,1:12,c("chrom1","start1","end1","chrom2","start2","end2",   "name","score", "strand1", "strand2", "multimappers", "overhang"))
-	    #  Canonical_SummarisedData <- data_set
+	      data_set <- data_set[,.(V1,V2,V3, V1,  V7, V4)]
+	      setnames(data_set,1:6,c("chrom","start","end","name",  "score", "strand"))
 	      data_set$DataSet <-  i	   # This adds an index to identify the file
 
 	      # Merge data
@@ -795,6 +802,45 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 
 	    }
 	  }
+
+	  ######## READ in regtools FSJ counts ##############
+	  Linear_Idx <- grep(pattern=paste(IDs[i],".rtSJ.out.tab(.gz|)",sep=""), x=filename$name )
+	  if (length(Linear_Idx) > 0)
+	  { FileTypeCounts$REGTOOLS <<- FileTypeCounts$REGTOOLS + 1
+  	  data_set <- fread(filename$datapath[Linear_Idx[1]], sep="\t")
+  	  setnames(data_set, 1:12, c("chrom","start","end","name","score","strandCHAR",
+  	                             "blockStart", "blockEnd","colour", "blockNumber",
+  	                             "blockSizes","blockStarts"))
+  	  if (ncol(data_set) == 12)            # BED file format generated from regtools
+  	  { IDs_idx <- c(IDs_idx, IDs[i])
+
+  	    blocks <- strsplit(data_set$blockSizes, ",")
+  	    blocks <- do.call(rbind, blocks)
+
+  	    data_set$start <- data_set$start + as.numeric(blocks[,1])
+  	    data_set$end <- data_set$end - as.numeric(blocks[,2])
+
+  	    # Create a integer strand column from text column
+  	    negativeStrandIDX <- which(data_set$strandCHAR =="-")
+  	    data_set$strand <- 1
+  	    data_set$strand[negativeStrandIDX] <- 2
+
+
+    	  data_set <- data_set[,.(chrom,start,end,name,score,strand)]
+
+#    	  setnames(data_set,1:10,c("chrom1","start1","end1","chrom2","start2","end2",
+ #   	                           "name","score", "strand1", "strand2"))
+    	  #  Canonical_SummarisedData <- data_set
+    	  data_set$DataSet <-  i	   # This adds an index to identify the file
+
+    	  # Merge data
+    	  if (! is.null(Canonical_AllData))
+    	  {  ext_FSJ_output$regtools <- rbind(ext_FSJ_output$regtools, data_set)  }
+    	  else
+    	  {  ext_FSJ_output$regtools <- data_set         }
+  	  }
+	  }
+
 
     ######## READ in gene counts ##############
 	  ReadsPerGene_Idx <- grep(pattern=paste(IDs[i],".ReadsPerGene.out.tab(.gz|)",sep=""), x=filename$name )
@@ -858,8 +904,8 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
     SampleList[listID] <- IDs[i]
 	 } # 	for (i in 1: length(IDs))
 
-#browser()
- # Groupings$SampleNames <- SampleList
+#browser()  # Groupings is not assigned within this function
+#Groupings$SampleNames <- SampleList
 
 }) # withProgress
 
@@ -1013,11 +1059,11 @@ identify_FSJ_support <- function(BS_Junc_ID, BSJ_strand, FSJ_Junctions=NULL, FSJ
     BSJ_idx <- c(2,4)
     if (BSJ_strand == "-") { BSJ_idx <- c(4,2) }
 
-    FSJ_score <- FSJ_Junctions[start1==as.numeric(BSJ_details[BSJ_idx[1]])]$score
+    FSJ_score <- FSJ_Junctions[start==as.numeric(BSJ_details[BSJ_idx[1]])]$score
     if (length(FSJ_score) )
       FSJ_support <- FSJ_support + 1
 
-    FSJ_score <- FSJ_Junctions[end2==as.numeric(BSJ_details[BSJ_idx[2]])]$score
+    FSJ_score <- FSJ_Junctions[end==as.numeric(BSJ_details[BSJ_idx[2]])]$score
     if (length(FSJ_score) )
       FSJ_support <- FSJ_support+ 1
   }
@@ -1161,11 +1207,11 @@ withProgress(message="Calculating read alignment distributions (RAD)", value=0, 
       BSJ_idx <- c(2,4)
       if (temp$strandDonor == "-") { BSJ_idx <- c(4,2) }
 
-      FSJ_score <- FSJ_Junctions[start1==as.numeric(BSJ_details[BSJ_idx[1]])]$score
+      FSJ_score <- FSJ_Junctions[start==as.numeric(BSJ_details[BSJ_idx[1]])]$score
       if (length(FSJ_score) )
         temp$FSJ_support <- temp$FSJ_support + 1
 
-      FSJ_score <- FSJ_Junctions[end2==as.numeric(BSJ_details[BSJ_idx[2]])]$score
+      FSJ_score <- FSJ_Junctions[end==as.numeric(BSJ_details[BSJ_idx[2]])]$score
       if (length(FSJ_score) )
         temp$FSJ_support <- temp$FSJ_support+ 1
 		}
@@ -1335,68 +1381,6 @@ withProgress(message="Annotating table", value=0, {
 }) # withProgress(message="Annotating table"
 
   return(DataSet)
-
-	########################
-
-
-old_implementation <- FALSE
-
-if(old_implementation)
-{
-	g_GR <- genes(GeneList$transcript_reference)
-	# select(org.Hs.eg.db, keys = '1', columns=c("ENTREZID", "SYMBOL","OMIM"),keytype="ENTREZID")
-	#   ENTREZID SYMBOL   OMIM
-	# 1        1   A1BG 138670
-
-	withProgress(message="Annotating table", value=0, {
-
-	  for(i in 1:MaxDisplay)
-	  {
-		  BSjuncDetails <- strsplit(DataSet$BSjuncName[i], split = "_")
-		  strand <- DataSet$strandDonor[i]
-		  if (Library_Strand == "Same Strand")
-		  {  if (length(strand) == 0)
-		    {
-
-		        cat("Catch error")
-		    }
-		      if (strand == "-")
-		        strand <- "+"
-		     else
-		        strand <- "-"
-		  }
-		  else if (Library_Strand == "Unstranded")
-		  { strand <- '*'  }
-
-		  bs_junc_gr <- GRanges(seqnames=BSjuncDetails[[1]][1], ranges = as.numeric(min(BSjuncDetails[[1]][c(2,4)]),min(BSjuncDetails[[1]][c(2,4)])),strand = strand)
-		  t_start <- findOverlaps(invertStrand(bs_junc_gr),g_GR, type=c("within"))
-		  bs_junc_gr <- GRanges(seqnames=BSjuncDetails[[1]][1], ranges = as.numeric(max(BSjuncDetails[[1]][c(2,4)]),max(BSjuncDetails[[1]][c(2,4)])),strand = strand)
-		  t_end <- findOverlaps(invertStrand(bs_junc_gr),g_GR, type=c("within"))
-
-		  entrezID <- c("Novel")
-		  if ((length(t_start) > 0) && (length(t_end) > 0))
-		  {	 entrezID_start <- g_GR[subjectHits(t_start)]$gene_id
-         entrezID_end <- g_GR[subjectHits(t_end)]$gene_id
-         entrezID <- intersect(entrezID_start, entrezID_end)
-         entrezID <- try(select(GeneList$Annotation_Library, keys = entrezID, columns=c("SYMBOL"),keytype="ENTREZID")[,'SYMBOL'],silent=TRUE) # Convert to Symbol
-
-         if(length(grep(pattern = "Error in ", x = entrezID)))  # This is start of error message when lookup is not linked
-         {  entrezID <- intersect(entrezID_start, entrezID_end)
-            entrezID <- try(select(GeneList$Annotation_Library, keys = entrezID, columns=c("SYMBOL"),keytype="ENSEMBL"),silent=TRUE)
-            if(length(grep(pattern = "Error in ", x = entrezID)))
-            {    entrezID <- c("Unknown") }
-            else
-            {   entrezID <- entrezID$SYMBOL }
-         }
-		  }
-      DataSet$Gene[i] <- paste(unique(entrezID),collapse=",")
-      incProgress(1/MaxDisplay, detail = paste("Updating Row ",i))
-	  }  # for(i in 1:MaxDisplay)
-
-	}) # withProgress
-
-	return(DataSet)
-}
 
 }
 
@@ -1590,17 +1574,17 @@ withProgress(message="Annotating with FSJ coverage", value=0, {
                                GeneList= GeneList, File_idx = File_idx[[j]],
                                Canonical_Junctions = Canonical_Junctions)
 
-          if (dim(PGO$Transcript_Canonical_juncs[start1< current_BSJ_coords[1] & end2 > current_BSJ_coords[2],])[1] > 0)
+          if (dim(PGO$Transcript_Canonical_juncs[start< current_BSJ_coords[1] & end > current_BSJ_coords[2],])[1] > 0)
           { # A FSJ that may have resulted from BSJ formation. At this stage save all/any counts to report.
-            canonical_flanking_Junctions[GeneIdx[g],j] <- canonical_flanking_Junctions[GeneIdx[g],j] + sum(PGO$Transcript_Canonical_juncs[start1< current_BSJ_coords[1] & end2 > current_BSJ_coords[2],.(score)])
+            canonical_flanking_Junctions[GeneIdx[g],j] <- canonical_flanking_Junctions[GeneIdx[g],j] + sum(PGO$Transcript_Canonical_juncs[start < current_BSJ_coords[1] & end > current_BSJ_coords[2],.(score)])
           }
-          if (dim(PGO$Transcript_Canonical_juncs[start1>= current_BSJ_coords[1] & end2 <= current_BSJ_coords[2],])[1] > 0)
+          if (dim(PGO$Transcript_Canonical_juncs[start>= current_BSJ_coords[1] & end <= current_BSJ_coords[2],])[1] > 0)
           { # Record FSJ counts that are located inside BSJ coordinate.
-            Internal_FSJ_of_circRNA[GeneIdx[g],j] <- round(mean(unlist(PGO$Transcript_Canonical_juncs[start1> current_BSJ_coords[1] & end2 < current_BSJ_coords[2],.(score)])),1)
+            Internal_FSJ_of_circRNA[GeneIdx[g],j] <- round(mean(unlist(PGO$Transcript_Canonical_juncs[start> current_BSJ_coords[1] & end < current_BSJ_coords[2],.(score)])),1)
           }
-          if (dim(PGO$Transcript_Canonical_juncs[start1< current_BSJ_coords[1] | end2 > current_BSJ_coords[2],])[1] > 0)
+          if (dim(PGO$Transcript_Canonical_juncs[start< current_BSJ_coords[1] | end > current_BSJ_coords[2],])[1] > 0)
           { # Record FSJ counts that are located inside BSJ coordinate.
-            External_FSJ_of_circRNA[GeneIdx[g],j] <- round(mean(unlist(PGO$Transcript_Canonical_juncs[start1< current_BSJ_coords[1] | end2 > current_BSJ_coords[2],.(score)])),1)
+            External_FSJ_of_circRNA[GeneIdx[g],j] <- round(mean(unlist(PGO$Transcript_Canonical_juncs[start< current_BSJ_coords[1] | end > current_BSJ_coords[2],.(score)])),1)
           }
 
           GeneFeatures <- Gene_Transcript_Features(GeneList=GeneList, Gene_Symbol=GeneName, GeneObject=PGO)
@@ -1724,8 +1708,9 @@ debug(debugme)
     ProjectData  = list(),                  # This contains all raw data of a project file.
     PartialPooledDataSet = NULL,
     External_BSJ_DataSet = list(CE2=blankTable, CIRI= blankTable),
-    External_BSJ_GroupedDataSet = list(CE2=blankTable, CIRI= blankTable)
-
+    External_BSJ_GroupedDataSet = list(CE2=blankTable, CIRI= blankTable),
+    External_FSJ_DataSet = list(REGTOOLS=blankTable)
+#    ext_FSJ_output
   )
   Groupings <- reactiveValues( SampleNames = list() )   # Groupings$SampleNames
 
@@ -1872,7 +1857,7 @@ debug(debugme)
 
 
       if (input$BSJ_data_source == "CircExplorer2")
-      {
+      {#browser()
         subsetted_by_sample <- subset(Ularcirc_data$ProjectData$ext_BSJ_output$CE2_data,DataSet %in% idx[[1]])
         temp <- group_by(subsetted_by_sample, geneSymbol, BSjuncName,  strandDonor)
         temp <- summarise(temp,total=sum(Freq))
@@ -1962,6 +1947,7 @@ debug(debugme)
       } # for(i in 1:a)
 
     toDisplay <- as.data.frame(Reduce(function(x, y) merge(x, y, by="BSjuncName",all.x=TRUE), GroupData))
+ #   browser()
     # toDisplay is now a table of multiples of 4 columns. Every third column is the count.
     # Column 1 2 3 4  are BSJ ID, Gene ID, Count, strand.
     # Therefore need to compact table and assemble to be displayed.
@@ -2517,10 +2503,19 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
 		  cat(paste("\nRequesting Gene Object for", Ularcirc_data$Current_SelectedGene,date()))
 
-	#	  browser()   # Ularcirc_data$ProjectData$ext_BSJ_output$CE2_data
+
+		  Canonical_Junctions <- Ularcirc_data$ProjectData$Canonical_AllData
+		  if (input$FSJ_data_source == "Regtools")
+		  {
+		    Canonical_Junctions <- Ularcirc_data$ProjectData$ext_FSJ_output$regtools
+		  }
+
 		  PGO<-Prepare_Gene_Object(Ularcirc_data$Current_SelectedGene, BS_Junctions = Ularcirc_data$ProjectData$Junctions,
 		                                      GeneList= GeneList(), File_idx = idx,
-		                                      Canonical_Junctions = Ularcirc_data$ProjectData$Canonical_AllData)
+		                                      Canonical_Junctions = Canonical_Junctions)
+      # Following is saved for display purposes only
+		  Ularcirc_data$CanonicalJunctionCountTable <- PGO$Transcript_Canonical_juncs
+
 
 		  if (is.null(PGO))
 		  {  return(PGO) }
@@ -2563,9 +2558,9 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 		    # copy correct data back into PGO.
 		    PGO$Junctions$uniques.bed  <- as.data.table(temp)
 		  }
-      else # "STAR"
+      else # "STAR chimeric junctions"
       {
-		    Ularcirc_data$CanonicalJunctionCountTable <- PGO$Transcript_Canonical_juncs[,.(chrom1,start1,end2,strand1,score,DataSet,multimappers,overhang)]
+		    Ularcirc_data$CanonicalJunctionCountTable <- PGO$Transcript_Canonical_juncs[,.(chrom,start,end,strand,score,DataSet)]
 
 		    if (is.double(PGO$Junctions))  #i.e. has a value of -1, means there is no data
 		      Ularcirc_data$BackSpliceJunctionCountTable <- data.table(Status="No data points")
@@ -2764,7 +2759,6 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
  	##
  	output$DisplayBSJ_PCA<- renderPlot({
 
-
  	  if (is.null(PrepareGroupOptions()))    # Check there are groups defined. There should be always at least one.
  	  { blurb <- HTML(paste("No groups defined. To do this navigate to Projects tab and define number of samples.
                           Assign samples to group at bottom of main tab.<br><br>
@@ -2818,15 +2812,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
  	  rowIdx <- row.names(toDisplay)  # This should be data table index
  	  GeneIDs <- toDisplay[,1]
  	  strand_idx <- which(colnames(toDisplay) %in% c("strandDonor","Gene"))
-# browser()
-# 	  strand_and_gene_data <- toDisplay[,c("strandDonor","Gene")]
 
  	  toDisplay <- as.data.frame(as.matrix(toDisplay)[,setdiff(colnames(toDisplay), c("BSjuncName","strandDonor", "Gene") )])
  	  row.names(toDisplay) <- rowIdx
 
-
- #	  if (length(table(GeneIDs)) > 1)  # If table is annotated then annotate heatmap
- 	#  {   row.names(toDisplay) <- GeneIDs } #paste(rowIdx,GeneNames,sep="_")  }
  	  pca.results <- prcomp(t(log2(data.matrix(toDisplay)+0.01)))
  	  PCA_df <- data.frame(pca.results$x[,1:2])
  	  PCA_df$label <- row.names(pca.results$x)
@@ -2838,7 +2827,130 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
  	  p2
  	})
 
+ 	######################################################################
+ 	## Global analysis plots
+ 	##
+ 	output$Global_Analysis_Plots<- renderPlot({
 
+ 	  # Select input data source
+ 	  if (input$BSJ_data_source == "CircExplorer2")
+ 	  { inputData <- Ularcirc_data$External_BSJ_GroupedDataSet$CE2 	  }
+ 	  else if (input$BSJ_data_source == "CIRI2")
+ 	  { inputData <- Ularcirc_data$External_BSJ_GroupedDataSet$CIRI 	  }
+ 	  else
+ 	  { inputData <- Ularcirc_data$PartialDataSet  }
+
+ 	  #### Select normalisation method
+ 	  normalisationMethods <- c("PCA","Heatmap")
+ 	  if ( length(intersect(input$Global_Analysis_Plots_Options, normalisationMethods)) )
+ 	  { # PCA or Heatmap , therefore need normalisation data
+   	  if(typeof(inputData$CPM) == 'NULL')
+   	  { blurb <- HTML(paste("No normalised data from ",input$BSJ_data_source," to prepare plot from. Please ensure that you
+   	                        have uploaded a data set and have build count table.<br><br>
+   	                        Press any key to continue."))
+   	    showModal(modalDialog(title="No normalised data",blurb,easyClose=TRUE,footer=NULL))
+   	    return(NULL)
+   	  }
+
+   	  if (input$Normalisation == "Raw counts")
+   	  {	#toDisplay <- Ularcirc_data$PartialDataSet$RAW
+   	    #heatmap_heading <- "Raw counts"
+   	    blurb <- HTML(paste("Best practise is to normalise data. Prefered method is to normalise to
+                            gene counts (CPM_GENE). Alternatively could try CPM.<br><br>
+   	                        Press any key to continue."))
+   	    showModal(modalDialog(title="ERROR: Selected un-normalised data",blurb,easyClose=TRUE,footer=NULL))
+   	    return(NULL)
+   	  }
+
+   	  # Default is CPM normalisation
+   	  toDisplay <- inputData$CPM
+   	  plot_heading <- "BSJ normlised to per million BSJ counts"
+   	  if (input$Normalisation == "CPM_Gene")
+   	  { if (typeof(inputData$CPM_GENE) == "NULL")
+   	  { 	 blurb <- HTML(paste("There is no gene counts associated with this project. You will
+                            need to attempt uploading the project again making sure you load the
+                            ReadsPerGene.out.tab  output files.
+                            <br><br>Press any key to continue."))
+   	  showModal(modalDialog(title="ERROR: No gene count data",blurb,easyClose=TRUE,footer=NULL))
+   	  return(NULL)
+   	  }
+   	    toDisplay <- inputData$CPM_GENE
+   	    plot_heading <- "BSJ normalised to per 10 million gene counts"
+   	  }
+ 	  }
+ 	  else
+ 	  {
+ 	    toDisplay <- inputData$RAW
+ 	  }
+
+ 	  GeneName <- as.character(toDisplay$Gene)
+ 	  col_data_names <- setdiff(colnames(toDisplay), c("BSjuncName","strandDonor", "Gene") )
+ 	  toDisplay <- as.matrix(toDisplay)[,col_data_names]
+
+ 	  # Have tried several things to convert "list" to a numeric data frame. Below is a list of attempts
+ 	  # that failed:
+ 	  #  do.call(cbind, toDisplay)
+ 	  #  	  toDisplay <- as.data.frame.integer(as.matrix(toDisplay)[,col_data_names])
+ 	  # The following was the only way that did not have a bug
+ 	  #
+ 	  tmp_fix <- {}
+    for (i in 1:ncol(toDisplay))
+    {  tmp_fix <- cbind(tmp_fix, as.numeric(as.character(toDisplay[,i])))   }
+ 	  toDisplay <- tmp_fix
+    colnames(toDisplay) <- col_data_names
+    row.names(toDisplay) <- GeneName
+
+
+ 	  if (input$Global_Analysis_Plots_Options == "Unique Number of circRNAs")
+ 	  {
+ 	    idx <- which(toDisplay > 0)
+ 	    toDisplay[idx] <- 1
+ 	    barplot(toDisplay, main="Number of unique circRNA", xlab="Samples")
+ 	  }
+    else  if (input$Global_Analysis_Plots_Options == "Genes producing circRNAs")
+    {
+      idx <- which(toDisplay > 0)
+      toDisplay[idx] <- 1
+      toDisplay <- apply(toDisplay, 2, FUN = function(x) {length(unique(GeneName[which(x > 0)]))})
+    # Would be nice to show how many genes have multiple entries
+      barplot(toDisplay, main="Number of genes producing circRNAs", xlab = col_data_names)
+    }
+    else  if (input$Global_Analysis_Plots_Options == "Cummulative distribution")
+    {
+      coloursUsed <- "black"
+      for (i in 1:ncol(toDisplay))
+      { toDisplay.ecdf <- ecdf(toDisplay[,i])
+        if (i == 1)
+        {  plot(toDisplay.ecdf, verticals=TRUE, do.points=FALSE,main="Cummulative distribution")  }
+        else
+        { plot(toDisplay.ecdf, verticals=TRUE, do.points=FALSE, add=TRUE, col=colour_Pallette[i])
+          coloursUsed <- c(coloursUsed, colour_Pallette[i])
+        }
+
+      }
+      legend("right",col_data_names, col=coloursUsed, pch=21)
+    }
+    else if (input$Global_Analysis_Plots_Options == "PCA")
+    {
+      pca.results <- prcomp(t(log2(data.matrix(toDisplay)+0.01)))
+      PCA_df <- data.frame(pca.results$x[,1:2])
+      PCA_df$label <- row.names(pca.results$x)
+
+      require(ggplot2)
+
+      p <- ggplot(as.data.frame(PCA_df), aes(PC1,PC2, label=label)) + geom_point(color="red")
+      p2 <- p + ggrepel::geom_text_repel() + labs(title = plot_heading)
+      p2
+    }
+    else if (input$Global_Analysis_Plots_Options == "Heatmap")
+    {
+      v <- apply(toDisplay,1,var)
+      a<-toDisplay[order(v,decreasing = T )[1:input$HeatmapGeneNumber],]
+      redblueColor<-c(colorRampPalette(c("blue","white"))(35),colorRampPalette(c("white","red"))(35));
+      heatmap(as.matrix(a ),col=redblueColor,scale = "none", main="Heatmap", cexCol = 0.75 )
+    }
+
+ 	})
 
 	PrepareGroupOptions <- reactive({
 	  w <- {}
@@ -2863,6 +2975,9 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   })
 
 	output$CanonicalJunctionCountTable <- renderDataTable({
+
+	  browser()
+	  a <- 1
 	      datatable(Ularcirc_data$CanonicalJunctionCountTable, selection='single', options = list(lengthMenu = c(5, 10, 50), pageLength = 5))
 	  })
 
@@ -3290,7 +3405,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	      incProgress(1/2, detail = paste("Done !! "))
 	      Ularcirc_data$ProjectData <- DataSet
 
-	 #     browser()
+#browser()
 	      if (exists("ProjectGroupings"))
 	      {  Groupings$SampleNames <- ProjectGroupings    }
 
@@ -3298,7 +3413,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	      FileTypeCounts$STAR_FSJ <<- length(table(Ularcirc_data$ProjectData$Canonical_AllData$DataSet))
 	      FileTypeCounts$CE2 <<- length(table(Ularcirc_data$ProjectData$ext_BSJ_output$CE2_data$DataSet))
 	      FileTypeCounts$CIRI <<- length(table(Ularcirc_data$ProjectData$ext_BSJ_output$CIRI2_data$DataSet))
-
+	      FileTypeCounts$REGTOOLS <<- length(table(Ularcirc_data$ProjectData$ext_FSJ_output$regtools$DataSet))
 
 	      Ularcirc_data$ProjectData$ProjectFileName <- ProjectFileName         # Record the filename of the project in case need to update and re-save
 
@@ -3460,27 +3575,17 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
            FSJ_sources <- c(STAR="STAR", QORTS="QORTS", Regtools="Regtools")
 
       # Work out what data has been loaded
-
       DataSources_count <- unlist(FileTypeCounts)
-# if (sum(which(availableData == TRUE)) > 0)
       availableData <- (DataSources_count > 0)
       BSJ_sources <- BSJ_sources[availableData[1:3]]
       FSJ_sources <- FSJ_sources[availableData[4:6]]
   #    browser()
 
-
-#      if (Ularcirc$FileTypeCounts <- list(CIRI=0,CE2=0, STAR_BSJ=0, STAR_FSJ=0, QORTS=0, REGTOOLS=0))
-
-
       div(id="DataSource", style="display: inline-block;",
-
-
-
         radioButtons("BSJ_data_source", "BSJ data source:", BSJ_sources, inline = TRUE),
 
-
-        radioButtons("FSJ_data_source", "FSJ data source:",# FSJ_sources, inline = TRUE)
-               c("STAR" = "STAR"), inline=TRUE)
+        radioButtons("FSJ_data_source", "FSJ data source:", FSJ_sources, inline = TRUE)
+#               c("STAR" = "STAR"), inline=TRUE)
 #                  "Regtools" = "Regtools"),inline = TRUE)
       ) # div
     })
@@ -3518,7 +3623,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
   	  g<- genes(GeneList()$transcript_reference)
   	  inverse <- gaps(g)
-  	  FSJ <- makeGRangesFromDataFrame( Ularcirc_data$ProjectData$Canonical_AllData,seqnames.field = "chrom1",start.field = "start1", end.field = "end2", keep.extra.columns = TRUE )
+  	  FSJ <- makeGRangesFromDataFrame( Ularcirc_data$ProjectData$Canonical_AllData,seqnames.field = "chrom",start.field = "start", end.field = "end", keep.extra.columns = TRUE )
 
   	  if (is.null(Ularcirc_data$Genome_Coordinates$chrom))
   	  { return(NULL)  }
@@ -3547,10 +3652,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	                             Ularcirc_data$Genome_Coordinates$chromstart, Ularcirc_data$Genome_Coordinates$chromend,fileID=idx)
 
   	  Canonical_Junctions <- Ularcirc_data$ProjectData$Canonical_AllData
-  	  Canonical_Junctions = Canonical_Junctions[chrom1 == Ularcirc_data$Genome_Coordinates$chrom &
-  	                                              start1 > as.numeric(Ularcirc_data$Genome_Coordinates$chromstart) &
-  	                                              end2 < as.numeric(Ularcirc_data$Genome_Coordinates$chromend) &
-  	                                              strand1 == strand & DataSet==idx,]
+  	  Canonical_Junctions = Canonical_Junctions[chrom == Ularcirc_data$Genome_Coordinates$chrom &
+  	                                              start > as.numeric(Ularcirc_data$Genome_Coordinates$chromstart) &
+  	                                              end < as.numeric(Ularcirc_data$Genome_Coordinates$chromend) &
+  	                                              strand == strand & DataSet==idx,]
   	  Ularcirc_data$GenomeCanonicalJunctionCountTable <- Canonical_Junctions    # Save data in case want to display
 
   	  if (strand == 2) { strand <- -1 }   # Re-format strand for Transcript object
@@ -3624,11 +3729,15 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  SampleIDs <- seq(from=1, to=GroupNumber, by=1)
 
 #  	  for(i in 1:input$Number_BiologicalSamples)
+  	  allGroupNames <- {}
   	  for(i in 1:GroupNumber)
   	  { #inputId, label, value
   	    groupIDs <- paste("Group",SampleIDs[i],sep = "_")
   	    w <- paste(w,textInput(inputId=groupIDs, label=groupIDs, value=groupIDs))
+        allGroupNames <- c(allGroupNames, groupIDs)
   	  }
+#browser()
+  	  w <- paste(w,selectInput("AllGroups","List of all groups",choices=allGroupNames,multiple=FALSE,selectize=FALSE,size=length(allGroupNames)))
   	  HTML(w)
   	})
 
@@ -3669,7 +3778,6 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
   	CreateBiologicalGroupings <- #observeEvent(Groupings, {  #
   	  reactive( {   ## This code will assemble list of samples
-  	  ## Currently struggling to see how to not overwrite existing list
 #browser()
   	  inFile = Ularcirc_data$ProjectData$SampleIDs
 
@@ -3714,7 +3822,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  } # Assign all samples to group 1 as only 1 group
   	  else if (! is.null(input$groupIDs))
   	  { if ( input$AssignToGroup )      # If Assign to group action Button has been pressed start reassignment
-    	  {  Samples_to_Reassign <- input$SamplesAssignedToGroup
+    	  { browser()
+  	      Samples_to_Reassign <- input$SamplesAssignedToGroup
     	     GroupID <- input$AssignedGroupID
     	     AllGroupIDs <- input$groupIDs
     	     if (length(AllGroupIDs) == 0)
@@ -3858,10 +3967,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	   {  # This function records coordinates of a selected canonical junction so that it can be highlighted.
 
   	     SelectedRow <- input$CanonicalJunctionCountTable_row_last_clicked
-  	     Ularcirc_data$SelectedCanonical$Start <- Ularcirc_data$CanonicalJunctionCountTable[SelectedRow,.(start1)]
-  	     Ularcirc_data$SelectedCanonical$End  <-  Ularcirc_data$CanonicalJunctionCountTable[SelectedRow,.(end2)]
-  	     Ularcirc_data$SelectedCanonical$Chr  <- Ularcirc_data$CanonicalJunctionCountTable[SelectedRow,.(chrom1)]
-  	     Ularcirc_data$SelectedCanonical$Strand <- Ularcirc_data$CanonicalJunctionCountTable[SelectedRow,.(strand1)]
+  	     Ularcirc_data$SelectedCanonical$Start <- Ularcirc_data$CanonicalJunctionCountTable[SelectedRow,.(start)]
+  	     Ularcirc_data$SelectedCanonical$End  <-  Ularcirc_data$CanonicalJunctionCountTable[SelectedRow,.(end)]
+  	     Ularcirc_data$SelectedCanonical$Chr  <- Ularcirc_data$CanonicalJunctionCountTable[SelectedRow,.(chrom)]
+  	     Ularcirc_data$SelectedCanonical$Strand <- Ularcirc_data$CanonicalJunctionCountTable[SelectedRow,.(strand)]
   	   })
 
   	Selected_Table_Row <- observeEvent(input$BS_Junction_Count_Table_row_last_clicked,
@@ -3878,10 +3987,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
   	Selected_Table_Row <- observeEvent(input$GenomeCanonicalJunctionCountTable_row_last_clicked,
   	   { SelectedRow <- input$GenomeCanonicalJunctionCountTable_row_last_clicked
-  	     Ularcirc_data$SelectedGenome_FSJ$Start  <- Ularcirc_data$GenomeCanonicalJunctionCountTable[SelectedRow,.(start1)]
-  	     Ularcirc_data$SelectedGenome_FSJ$End    <-  Ularcirc_data$GenomeCanonicalJunctionCountTable[SelectedRow,.(end2)]
-  	     Ularcirc_data$SelectedGenome_FSJ$Chr    <- Ularcirc_data$GenomeCanonicalJunctionCountTable[SelectedRow,.(chrom1)]
-  	     Ularcirc_data$SelectedGenome_FSJ$Strand <- Ularcirc_data$GenomeCanonicalJunctionCountTable[SelectedRow,.(strand1)]
+  	     Ularcirc_data$SelectedGenome_FSJ$Start  <- Ularcirc_data$GenomeCanonicalJunctionCountTable[SelectedRow,.(start)]
+  	     Ularcirc_data$SelectedGenome_FSJ$End    <-  Ularcirc_data$GenomeCanonicalJunctionCountTable[SelectedRow,.(end)]
+  	     Ularcirc_data$SelectedGenome_FSJ$Chr    <- Ularcirc_data$GenomeCanonicalJunctionCountTable[SelectedRow,.(chrom)]
+  	     Ularcirc_data$SelectedGenome_FSJ$Strand <- Ularcirc_data$GenomeCanonicalJunctionCountTable[SelectedRow,.(strand)]
 
   	   })
 

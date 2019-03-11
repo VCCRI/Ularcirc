@@ -121,10 +121,18 @@ shinyUI(
 				    selectizeInput("MAX_BS_juncs_to_annotate", label= "Number of BS junctions to display",choices= as.numeric(c("5","10","20","35","50","75","100","250","500","1000","2000","5000","20000")), selected=10),
 				    selectizeInput("Normalisation",label="Raw counts or CPM",choices = c("Raw counts","CPM", "CPM_Gene"), selected=c("Raw counts")),
   				  conditionalPanel('input.Annotation_Options == "Grouped"',
-  				          selectizeInput("DisplayMode",label="Display mode",choices = c("Table", "PCA"), selected=c("Table"))
+  				          selectizeInput("DisplayMode",label="Display mode",choices = c("Table", "Plots"), selected=c("Table"))
   				          ),
-				    actionButton("buildTable_Button", "Build table"),
-		    br() ),
+				    conditionalPanel('input.DisplayMode != "Plots"', actionButton("buildTable_Button", "Build table")),
+
+				    conditionalPanel('input.DisplayMode == "Plots"',
+				            selectizeInput("Global_Analysis_Plots_Options",label="Please select plot",
+				                  choices = c("PCA","Heatmap","Unique Number of circRNAs","Genes producing circRNAs",
+				                                  "Cummulative distribution"),
+				                                    selected=c("Unique Number of circRNAs"))
+				    ),
+		        br()
+		    ), # conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"
 				br()
 			), #conditionalPanel
     conditionalPanel('input.PanelSelect == "Genome_View" && output.fileUploaded == true',
@@ -339,11 +347,15 @@ shinyUI(
 				          plotOutput("DisplayBSJ_PCA"),
 				        #  DT::dataTableOutput("DisplayJunctionCountTable"),
 				          br() ),
-				        br() ),
-
-					   br() ),
-
-					br() )
+				        conditionalPanel('input.Global_Analysis_Plots_Options == "Heatmap"',
+				          selectInput("HeatmapGeneNumber",label="Number of variable genes",choices = seq(from=10,to=50,by=10),selected = 10)
+				        ),
+				        conditionalPanel('input.DisplayMode == "Plots"',
+				          plotOutput("Global_Analysis_Plots")
+				          ),
+				        br() ), # conditionalPanel('input.Annotation_Options == "Grouped"',
+					   br() ), # conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"',
+					br() ) # conditionalPanel(condition = "output.fileUploaded == true",
 
 				),		# tabPanel 'Gene_View'
 
