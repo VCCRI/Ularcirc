@@ -261,18 +261,14 @@ Prepare_Gene_Object <- function(GeneName, BS_Junctions, GeneList, File_idx = c(-
     a <- try(select(GeneList$Annotation_Library, keys = GeneName, columns=c("ENTREZID", "SYMBOL", "ENSEMBL"),keytype="SYMBOL"),silent=TRUE)
   }
 
-  #browser()
-
-
-  lookupID <- a$ENTREZID   # Default lookup
   if (length(grep(pattern="Error", x=a)))
   {
     showModal(modalDialog(title="Cannot retrieve genomic information for this gene",
-            "Please check that you have loaded correct annotation database.
-             Nothing will be displayed.",easyClose=TRUE,footer=NULL))
+            "Check that you have loaded an annotation database under the setup tab. Alternatively there is no entry for this gene.
+             No loop plots can be displayed until a database is loaded.",easyClose=TRUE,footer=NULL))
     return ( NULL )
   }
-
+  lookupID <- a$ENTREZID   # Default lookup
 
   if (length(which(keys(GeneList$transcript_reference) == a$ENTREZID) ) == 0)
   {
@@ -333,6 +329,7 @@ Prepare_Gene_Object <- function(GeneName, BS_Junctions, GeneList, File_idx = c(-
 
 	chrom_ <- chrom # so we don't confuse the following subset
 	strand_ <- strand
+
 	Transcript_Canonical_juncs = Canonical_Junctions[chrom == chrom_ & start > chromstart &
 	                                                   end < chromend &   strand == strand_ & DataSet %in% File_idx,]
 
@@ -1798,6 +1795,11 @@ debug(debugme)
 
 	m379 <- observeEvent(input$JunctionFile,{
 	  #extdata_path <- DataPath()  # function from Global.R
+	  if (exists("ProjectGroupings"))   # Remove existing project Grouping before loading in new data
+	  { remove(ProjectGroupings) }
+	  if (exists("meta_data"))
+	  { remove(meta_data)}
+
 		inFile <- input$JunctionFile
 
 		cat(paste("\nLoading data", inFile))
@@ -1816,7 +1818,8 @@ debug(debugme)
       ID <- paste("Group_",i,sep="")
       groupList[ID] <-  Ularcirc_data$ProjectData$SampleIDs[i]
     }
-		Groupings$SampleNames <- groupList
+browser()
+		Groupings$SampleNames <<- groupList
 
 		return(Ularcirc_data$ProjectData)
 	})
@@ -2513,12 +2516,13 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 		  PGO<-Prepare_Gene_Object(Ularcirc_data$Current_SelectedGene, BS_Junctions = Ularcirc_data$ProjectData$Junctions,
 		                                      GeneList= GeneList(), File_idx = idx,
 		                                      Canonical_Junctions = Canonical_Junctions)
+		  if (is.null(PGO))
+		  {  return(PGO) }
+
+
       # Following is saved for display purposes only
 		  Ularcirc_data$CanonicalJunctionCountTable <- PGO$Transcript_Canonical_juncs
 
-
-		  if (is.null(PGO))
-		  {  return(PGO) }
 
 		  if (input$BSJ_data_source != "STAR")
 		  {
@@ -2714,6 +2718,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	  else
 	  { toDisplay <- data.frame(c(ACTION_REQUIRED="No data assembled. Press build table to proceed."))
 	  }
+
+	  Ularcirc_data$External_BSJ_GroupedDataSet$CurrentDisplay <- toDisplay
 
 	  datatable(toDisplay, selection = 'single', options = list(lengthMenu = c(10,50,500,5000), pageLength = 15))
 
@@ -2976,7 +2982,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
 	output$CanonicalJunctionCountTable <- renderDataTable({
 
-	  browser()
+	 # browser()
 	  a <- 1
 	      datatable(Ularcirc_data$CanonicalJunctionCountTable, selection='single', options = list(lengthMenu = c(5, 10, 50), pageLength = 5))
 	  })
@@ -3394,6 +3400,9 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
   	 withProgress(message="Loading project data. Be patient", value=0, {
 	     incProgress(1/2, detail = paste("Warning:: status bar cannot increment"))
+
+#browser()
+
   	    if (exists("ProjectGroupings"))   # Remove existing project Grouping before loading in new data
   	    { remove(ProjectGroupings) }
   	    if (exists("meta_data"))
@@ -3405,7 +3414,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	      incProgress(1/2, detail = paste("Done !! "))
 	      Ularcirc_data$ProjectData <- DataSet
 
-#browser()
+
 	      if (exists("ProjectGroupings"))
 	      {  Groupings$SampleNames <- ProjectGroupings    }
 
@@ -3422,6 +3431,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	      { blurb <- paste("<b>Project name:</b> ", ProjectFileName, "<br/>", sep="")
   	      blurb <- paste(blurb, "<b>TxDb:</b> ", meta_data$ProjectSpecies , "<br/>", sep="")
 	        blurb <- paste(blurb, "<b>Library type:</b> ",meta_data$LibraryStrandType, "<br/>", sep="")
+	        DetectedData <- paste(names(which(FileTypeCounts > 0)),":", FileTypeCounts[which(FileTypeCounts > 0)], collapse="<br/>")
+	        blurb <- paste(blurb,"<b>Data sets</b><br/>", DetectedData, "<br/>")
 	        ProjNotes <- gsub(pattern = "\n",replacement = "<br/>",x = meta_data$ProjectNotes)
 	        blurb <- HTML(paste(blurb, "<b>Additional notes:</b><br/> ",ProjNotes, "<br/>", sep=""))
 	        showModal(modalDialog(title="Associated meta data",blurb,easyClose=TRUE,footer=NULL))
@@ -3600,6 +3611,12 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  if (! Ularcirc_data$GenePanelLoaded)
   	  { return(NULL) }
 
+  	  circs <- circRNA_Subset()
+  	  if (is.null(circs))  # This will return NULL if no gene model database is loaded
+  	  { return (NULL) }
+
+
+
 		  cat(paste("\nStarting to renter transcript plot", date()))
   		layout(matrix(c(#1,1,1,
 						4,4,4,
@@ -3610,9 +3627,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
            	), 4, 3, byrow = TRUE))      # 4 rows, three columns
 	  	par(mar=c(3,4,1,1))
 
-
   		Zoom_coords <- View_Gene_At_Coords()
-  		circs <- circRNA_Subset()
+
 	  	DTE <- Draw_Transcript_Exons(circs, JunctionOption(), Zoom_coords, Junction_highlight=list(BSjunc=Ularcirc_data$Current_Selected_BS_Junction, Canonical = Ularcirc_data$SelectedCanonical))
 		  cat(paste("\n-Completed rendering transcript plot", date()))
 		  DTE
@@ -3708,19 +3724,14 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	})
 
 
-  	output$DisplayGroupNumber <- renderUI ({   # This prepares group IDs for sidebar, accessed in UI.R
- ## This is currently not in use. Was thinking of using this to replace line in UI.R so that can  have more control when loading data.
-  ##	  w <-	sliderInput("Number_BiologicalSamples", "Number of biological treatments in data set:",min = 1, max = 10, value = 1)
-  ##    HTML(w)
-  	})
-
   	output$DisplayGroupNames <- renderUI ({   # This prepares group IDs for sidebar, accessed in UI.R
    #   if (is.null(input$Number_BiologicalSamples))
     #  { return() }
-#browser()
+
   	  GroupNumber <- length(Groupings$SampleNames)
   	  if (GroupNumber == 0)   # No Data has been loaded yet
   	    return(NULL)
+#browser()
 
   	  w <- paste( sliderInput("Number_BiologicalSamples",
   	              "Number of biological treatments in data set:",
@@ -3866,8 +3877,12 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  input$DisplayAllJunctions_row_last_clicked
   	  input$GeneListDisplay
   	  Ularcirc_data$Current_SelectedGene
-  	}, {  # First check if new gene was selected. IF so update genomic coordinates
+  	}, {
+  	  # First check if new gene was selected. IF so update genomic coordinates
   	  Gene_Transcripts = circRNA_Subset()
+  	  if (is.null(Gene_Transcripts))
+  	  { return(NULL) }
+
   	  Gene_min <- min(Gene_Transcripts$Transcript$start) -501
   	  Gene_max <- max(Gene_Transcripts$Transcript$stop) + 501
   	  Gene_Coords <- as.numeric(c(Gene_min, Gene_max))
@@ -3911,6 +3926,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	Selected_Junction_Row <- observeEvent(input$Display_externalBSJ_CountTable_row_last_clicked,
     {   # This function will identify the selected values from a table row
       SelectedRow <- input$Display_externalBSJ_CountTable_row_last_clicked
+#browser()
       if (input$BSJ_data_source == "CircExplorer2")
       {
         Ularcirc_data$SelectedGene_from_BSJ_Table  <- as.character(Ularcirc_data$External_BSJ_DataSet$CE2$RAW$Gene[SelectedRow])
@@ -3936,12 +3952,11 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	Selected_Junction_Row <- observeEvent(input$Display_externalBSJ_GroupCountTable_row_last_clicked,
     {   # This function will identify the selected values from a table row
       SelectedRow <- input$Display_externalBSJ_GroupCountTable_row_last_clicked
-      Ularcirc_data$SelectedGene_from_BSJ_Table  <- as.character(Ularcirc_data$External_BSJ_GroupedDataSet$RAW$Gene[SelectedRow])
-      Ularcirc_data$Current_SelectedGene         <- as.character(Ularcirc_data$External_BSJ_GroupedDataSet$RAW$Gene[SelectedRow])
-      Ularcirc_data$Current_Selected_BS_Junction <- as.character(Ularcirc_data$External_BSJ_GroupedDataSet$RAW$BSjuncName[SelectedRow])
-      Ularcirc_data$Current_Selected_GeneCount   <- as.numeric(as.character(Ularcirc_data$External_BSJ_GroupedDataSet$RAW$Freq[SelectedRow]))
 
-      # grep(pattern = Ularcirc_data$Current_SelectedGene, x = GeneList()$GeneList, ignore.case = TRUE)
+      Ularcirc_data$SelectedGene_from_BSJ_Table  <- as.character(Ularcirc_data$External_BSJ_GroupedDataSet$CurrentDisplay$Gene[SelectedRow])
+      Ularcirc_data$Current_SelectedGene         <- as.character(Ularcirc_data$External_BSJ_GroupedDataSet$CurrentDisplay$Gene[SelectedRow])
+      Ularcirc_data$Current_Selected_BS_Junction <- as.character(Ularcirc_data$External_BSJ_GroupedDataSet$CurrentDisplay$BSjuncName[SelectedRow])
+      Ularcirc_data$Current_Selected_GeneCount   <- as.numeric(as.character(Ularcirc_data$External_BSJ_GroupedDataSet$CurrentDisplay$Freq[SelectedRow]))
       updateSelectizeInput(session,inputId="GeneListDisplay", choices=GeneList()$GeneList, selected=Ularcirc_data$Current_SelectedGene, server=TRUE)
     })
 
