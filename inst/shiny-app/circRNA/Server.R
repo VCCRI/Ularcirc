@@ -134,7 +134,7 @@ circJunctions<-function(All_junctions, chrom, chromstart, chromend, fileID = c(-
 ##
 ##
 ##
-circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_coords, JunctionOption, Junction_highlight=list(BSjunc=NULL, Canonical=NULL))
+circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_coords, JunctionOption, Junction_highlight=list(BSjunc=NULL, Canonical=NULL), currentGeneSymbol=NULL)
 {
   junc <- GeneObject$Junctions
   if (length(junc) == 0)
@@ -226,11 +226,9 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
           plot(signaltrack$start,signaltrack$score,type="h",lwd=10,xlim=c(start,stop))
      }
 
-
-
- #    plotJunctionFrequency(junc$bed,"chr9",46241512,46241528)
- #    plotJunctionFrequency(junc$bed,"chr9",46242340,46242356)
- #    plotJunctionFrequency(junc$bed,"chr9",46242424,46242439)
+     # Now plot gene name to confirm what is displayed
+     plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+     text(x = 0.5, y = 0.5, paste("Displaying gene:",currentGeneSymbol),  cex = 1.6, col = "black")
 
 }
 
@@ -353,7 +351,7 @@ Prepare_Gene_Object <- function(GeneName, BS_Junctions, GeneList, File_idx = c(-
 ##
 Draw_Transcript_Exons<-function(GeneObject, JunctionOption, Zoom_coords, GenomeDisplay=FALSE,
                                 Genome_Coords=list(chrom=NULL, chromstart=NULL, chromend=NULL, chromstrand=NULL),
-                                Junction_highlight = list(BSjunc=NULL, Canonical=NULL))
+                                Junction_highlight = list(BSjunc=NULL, Canonical=NULL), currentGeneSymbol=NULL)
 {
 	if (length(GeneObject) == 0)
 	{ return (NULL)	}
@@ -386,7 +384,7 @@ Draw_Transcript_Exons<-function(GeneObject, JunctionOption, Zoom_coords, GenomeD
 
 #	if (length(GeneObject$Junctions) == 4)	# Have some circRNAs to display
   if (length(grep(pattern = "uniques.bed", x = names(GeneObject$Junctions))))
-	{   circFigure_template1(GeneObject = GeneObject,chrom = chrom,chromstart=chromstart, chromend=chromend, JunctionOption=JunctionOption, Junction_highlight=Junction_highlight )
+	{   circFigure_template1(GeneObject = GeneObject,chrom = chrom,chromstart=chromstart, chromend=chromend, JunctionOption=JunctionOption, Junction_highlight=Junction_highlight, currentGeneSymbol=currentGeneSymbol )
 	}
 
 	if (length(GeneObject$Junctions) == 1)	# No circRNAs to display. Just show transcript
@@ -397,7 +395,8 @@ Draw_Transcript_Exons<-function(GeneObject, JunctionOption, Zoom_coords, GenomeD
 	    GeneObject$Junctions$uniques.bed <- GeneObject$Transcript_Canonical_juncs[1,]
 	    GeneObject$Junctions$uniques.bed$score <- 0
 	    GeneObject$Junctions$uniques.bed$JunctionType <- 1
-      circFigure_template1(GeneObject = GeneObject,chrom = chrom,chromstart=chromstart, chromend=chromend, JunctionOption=JunctionOption )
+      circFigure_template1(GeneObject = GeneObject,chrom = chrom,chromstart=chromstart, chromend=chromend,
+                           JunctionOption=JunctionOption, currentGeneSymbol=currentGeneSymbol )
 
 	  }
 	  if (length(GeneObject$Transcript_Canonical_juncs) != 13 )
@@ -3634,7 +3633,9 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
   		Zoom_coords <- View_Gene_At_Coords()
 
-	  	DTE <- Draw_Transcript_Exons(circs, JunctionOption(), Zoom_coords, Junction_highlight=list(BSjunc=Ularcirc_data$Current_Selected_BS_Junction, Canonical = Ularcirc_data$SelectedCanonical))
+	  	DTE <- Draw_Transcript_Exons(circs, JunctionOption(), Zoom_coords,
+	  	      Junction_highlight=list(BSjunc=Ularcirc_data$Current_Selected_BS_Junction, Canonical = Ularcirc_data$SelectedCanonical),
+	  	      currentGeneSymbol=Ularcirc_data$Current_SelectedGene)
 		  cat(paste("\n-Completed rendering transcript plot", date()))
 		  DTE
 	  })
@@ -3689,7 +3690,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  GeneObject <- list(Transcript= Transcript, Junctions = BS_Junctions, Transcript_Canonical_juncs = Canonical_Junctions)
 
 
-  	  DTE <- Draw_Transcript_Exons(GeneObject, JunctionOption(), Zoom_coords=NULL, GenomeDisplay=TRUE, Genome_Coords=Ularcirc_data$Genome_Coordinates)
+  	  DTE <- Draw_Transcript_Exons(GeneObject, JunctionOption(), Zoom_coords=NULL, GenomeDisplay=TRUE,
+  	                               Genome_Coords=Ularcirc_data$Genome_Coordinates, currentGeneSymbol=Ularcirc_data$Current_SelectedGene)
   	  cat(paste("\n-Completed rendering genome plot", date()))
   	  DTE
   	})
