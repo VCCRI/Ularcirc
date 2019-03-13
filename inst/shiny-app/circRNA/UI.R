@@ -400,8 +400,7 @@ shinyUI(
 					h3('No file loaded, go back to "Setup" tab and load a data set',style="color:red"),
 					br()),
 
-				conditionalPanel(condition = "output.fileUploaexport(UTR_3p[Multi_UTR_3p_idx], 'c:/temp/multi_3p.gtf')
-ded == true",
+				conditionalPanel(condition = "output.fileUploaded == true",
 				  verbatimTextOutput("ShowDataSets_on_JunctionView"),
 				  conditionalPanel('input.Junction_View_Mode == "Backsplice"',
   					uiOutput("DisplayBS_sequence_details"),
