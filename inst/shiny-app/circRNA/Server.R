@@ -616,24 +616,22 @@ Fragment_Alignment_Distribution<-function(BSJ_table)
 #  returns a list of
 # normalise_raw_counts(rawData,  Ularcirc_data$ProjectData$ReadsPerGene_Data, input$LibraryStrandType)
 normalise_raw_counts <- function(rawData, colIDs="Freq", readsPerGene, LibraryStrandType)
-{
+{ rawData <- as.data.frame(rawData)
   toDisplay <- list(RAW=rawData, CPM=rawData, CPM_GENE=rawData, TOTAL_COUNTS = sum(rawData$Freq))
 
   col_idx <- which(colnames(toDisplay$RAW) %in% unlist(colIDs))
 
-
   for (i in 1:length(col_idx))
-  { #browser()
+  {
     toDisplay$TOTAL_COUNTS <- sum(toDisplay$RAW[,col_idx[i]])
     toDisplay$CPM[,col_idx[i]] <- round((toDisplay$RAW[,col_idx[i]] / toDisplay$TOTAL_COUNTS * 1000000),2)
 #    toDisplay$CPM$Freq <- round((toDisplay$RAW[,col_idx[i]] / toDisplay$TOTAL_COUNTS * 1000000),2)
 
-# browser()
+
     if (typeof(readsPerGene) != "NULL")  # Make sure exists
     { readsPerGene_dim <- dim(readsPerGene)
       if ((readsPerGene_dim[2] == 5)  &&  (readsPerGene_dim[1] > 5))  # Make sure has correct number of columns
       { Gene_Counts <- colSums(readsPerGene[-1:-5,2:5]) # remove header
-
         if (LibraryStrandType == "Unstranded")
         {  toDisplay$CPM_GENE[,col_idx[i]] <- toDisplay$RAW[,col_idx[i]]/Gene_Counts["unstranded"]    }
         if (LibraryStrandType == "Opposing strand")
@@ -1845,6 +1843,11 @@ browser()
 	##
 	##
   Assemble_ExternalDataSet <- observeEvent(input$buildTable_Button,{
+    if (length(input$BSJ_data_source) == 0)
+    { browser()
+      a<- 1
+      a<- "Debug"
+    }
 
 	    if (input$BSJ_data_source == "STAR")
 	    { return(NULL)}
@@ -2656,8 +2659,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	      toDisplay <- Ularcirc_data$External_BSJ_DataSet$CE2$CPM
 	  }
 
-
-
+	  Ularcirc_data$External_BSJ_DataSet$CurrentDisplay <- toDisplay
 
 	  datatable(toDisplay, selection = 'single', options = list(lengthMenu = c(10,50,500,5000), pageLength = 15))
 
@@ -3613,7 +3615,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
   	  circs <- circRNA_Subset()
   	  if (is.null(circs))  # This will return NULL if no gene model database is loaded
-  	  { return (NULL) }
+  	  { plot(c(0, 1), c(0, 1), ann = F, bty = 'n', type = 'n', xaxt = 'n', yaxt = 'n')
+  	    text(x = 0.5, y = 0.5, paste("No gene model loaded.\n Please go to setup tab and load required organism database"),
+  	         cex = 1.6, col = "black")
+  	    return (NULL) }
 
 
 
@@ -3720,6 +3725,15 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  }
   	  w <- paste(w,selectizeInput("AssignedGroupID",label="Assign checked samples to group:",choices = SampleIDs))
   	  w <- paste(w, actionButton(inputId = "AssignToGroup",label = "Assign"))
+
+#   	  w <- paste(w,selectInput("AllGroups","List of all groups",choices=allGroupNames,multiple=FALSE,selectize=FALSE,size=length(allGroupNames)))
+  	  currentSelectedList <- input$AllGroups
+  	  idx <- which(names(Groupings$SampleNames) == currentSelectedList)
+#browser()
+
+  	  w <- paste(w,selectInput("AssignedToThisGroupList","List of all groups",choices=Groupings$SampleNames[[idx]],
+  	                           multiple=FALSE,selectize=FALSE,size=5))
+
   	  HTML(w)
   	})
 
@@ -3744,10 +3758,9 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  for(i in 1:GroupNumber)
   	  { #inputId, label, value
   	    groupIDs <- paste("Group",SampleIDs[i],sep = "_")
-  	    w <- paste(w,textInput(inputId=groupIDs, label=groupIDs, value=groupIDs))
+ # 	    w <- paste(w,textInput(inputId=groupIDs, label=groupIDs, value=groupIDs))
         allGroupNames <- c(allGroupNames, groupIDs)
   	  }
-#browser()
   	  w <- paste(w,selectInput("AllGroups","List of all groups",choices=allGroupNames,multiple=FALSE,selectize=FALSE,size=length(allGroupNames)))
   	  HTML(w)
   	})
@@ -3926,26 +3939,12 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	Selected_Junction_Row <- observeEvent(input$Display_externalBSJ_CountTable_row_last_clicked,
     {   # This function will identify the selected values from a table row
       SelectedRow <- input$Display_externalBSJ_CountTable_row_last_clicked
-#browser()
-      if (input$BSJ_data_source == "CircExplorer2")
-      {
-        Ularcirc_data$SelectedGene_from_BSJ_Table  <- as.character(Ularcirc_data$External_BSJ_DataSet$CE2$RAW$Gene[SelectedRow])
-        Ularcirc_data$Current_SelectedGene         <- as.character(Ularcirc_data$External_BSJ_DataSet$CE2$RAW$Gene[SelectedRow])
-        Ularcirc_data$Current_Selected_BS_Junction <- as.character(Ularcirc_data$External_BSJ_DataSet$CE2$RAW$BSjuncName[SelectedRow])
-        Ularcirc_data$Current_Selected_GeneCount   <- as.numeric(as.character(Ularcirc_data$External_BSJ_DataSet$CE2$RAW$Freq[SelectedRow]))
-      }
-      else if (input$BSJ_data_source == "CIRI2")
-      {
-        Ularcirc_data$SelectedGene_from_BSJ_Table  <- as.character(Ularcirc_data$External_BSJ_DataSet$CIRI$RAW$Gene[SelectedRow])
-        Ularcirc_data$Current_SelectedGene         <- as.character(Ularcirc_data$External_BSJ_DataSet$CIRI$RAW$Gene[SelectedRow])
-        Ularcirc_data$Current_Selected_BS_Junction <- as.character(Ularcirc_data$External_BSJ_DataSet$CIRI$RAW$BSjuncName[SelectedRow])
-        Ularcirc_data$Current_Selected_GeneCount   <- as.numeric(as.character(Ularcirc_data$External_BSJ_DataSet$CIRI$RAW$Freq[SelectedRow]))
-      }
-      else
-        return(NULL)
 
+      Ularcirc_data$SelectedGene_from_BSJ_Table  <- as.character(Ularcirc_data$External_BSJ_DataSet$CurrentDisplay$Gene[SelectedRow])
+      Ularcirc_data$Current_SelectedGene         <- as.character(Ularcirc_data$External_BSJ_DataSet$CurrentDisplay$Gene[SelectedRow])
+      Ularcirc_data$Current_Selected_BS_Junction <- as.character(Ularcirc_data$External_BSJ_DataSet$CurrentDisplay$BSjuncName[SelectedRow])
+      Ularcirc_data$Current_Selected_GeneCount   <- as.numeric(as.character(Ularcirc_data$External_BSJ_DataSet$CurrentDisplay$Freq[SelectedRow]))
 
-      # grep(pattern = Ularcirc_data$Current_SelectedGene, x = GeneList()$GeneList, ignore.case = TRUE)
       updateSelectizeInput(session,inputId="GeneListDisplay", choices=GeneList()$GeneList, selected=Ularcirc_data$Current_SelectedGene, server=TRUE)
     })
 

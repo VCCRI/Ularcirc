@@ -23,8 +23,6 @@ shinyUI(
     useShinyjs(),
   titlePanel("UlarCirc : Analysing & Visualising Circular and linear RNA"),
 
-#  dashboardPage(
- #  dashboardHeader(),
 
   sidebarLayout(
     sidebarPanel(
