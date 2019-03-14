@@ -1672,6 +1672,7 @@ shinyServer(function(input, output, session)
     # column will contain the local filenames where the data can
     # be found.
 
+
 debug(debugme)
 
 ##  showReactLog()
@@ -1815,7 +1816,7 @@ debug(debugme)
       ID <- paste("Group_",i,sep="")
       groupList[ID] <-  Ularcirc_data$ProjectData$SampleIDs[i]
     }
-browser()
+#browser()
 		Groupings$SampleNames <<- groupList
 
 		return(Ularcirc_data$ProjectData)
@@ -1843,7 +1844,7 @@ browser()
 	##
   Assemble_ExternalDataSet <- observeEvent(input$buildTable_Button,{
     if (length(input$BSJ_data_source) == 0)
-    { browser()
+    { #browser()
       a<- 1
       a<- "Debug"
     }
@@ -1909,10 +1910,17 @@ browser()
       idx <- list()              # Hold all file indexes for each group
       data_set_idx <- 0          # This is the list index to both SubsettedData and BSJ_junctons
       GroupData <- list()
+      GroupData_idx <- 1         # Keeps track of display data frame
+      GroupData_idx_used <- {}   # Keeps track of which columns ued for display data frame
       allBSJ_IDs <- {}
+
       for(i in 1:a)   # This loop collects all data. Need to keep a copy of everything so in next loop can collate easily
       {
+        if (Groupings$SampleNames[[i]][1] == "")
+          next;  # Blank group, ignore and move to next entry
+
         SampleIDs_for_current_group <- Groupings$SampleNames[[i]]
+
         if (! is.null(inFile))
         {	data_set_idx <- data_set_idx + 1
           for(j in 1:length(SampleIDs_for_current_group))     # Extract file IDs
@@ -1941,14 +1949,17 @@ browser()
 
         temp <- summarise(temp,total=sum(Freq))
         SubsettedData <- data.table(Gene=temp$geneSymbol, Freq=temp$total, BSjuncName=temp$BSjuncName, strandDonor=temp$strandDonor)
-        colnames(SubsettedData) <- c(paste("Gene_",i,sep=""), paste("Freq_",i,sep=""), "BSjuncName",
-                                     paste("strandDonor_",i,sep=""))
-        GroupData[[i]] <- SubsettedData
+
+        colnames(SubsettedData) <- c(paste("Gene_",GroupData_idx,sep=""),
+                                     paste("Freq_",GroupData_idx,sep=""), "BSjuncName",
+                                     paste("strandDonor_",GroupData_idx,sep=""))
+        GroupData[[GroupData_idx]] <- SubsettedData
       #  if (i == 1)
       #    allBSJ_IDs <- GroupData[[1]]$BSjuncName
       #  else
-          allBSJ_IDs <- unique(union(allBSJ_IDs, GroupData[[i]]$BSjuncName))
-
+          allBSJ_IDs <- unique(union(allBSJ_IDs, GroupData[[GroupData_idx]]$BSjuncName))
+          GroupData_idx <-GroupData_idx + 1
+          GroupData_idx_used <- c(i, GroupData_idx_used )
       } # for(i in 1:a)
 
     toDisplay <- as.data.frame(Reduce(function(x, y) merge(x, y, by="BSjuncName",all.x=TRUE), GroupData))
@@ -1959,17 +1970,18 @@ browser()
     if (ncol(toDisplay) > 6)
       toDisplay <- toDisplay[,c(1:3, seq(from=6, to=ncol(toDisplay),by=3))]
     # Add column names
-    colnames(toDisplay) <- c("BSjuncName","Gene",Groupings$SampleNames)
+    usedColNames <- names(Groupings$SampleNames)[GroupData_idx_used]
+    colnames(toDisplay) <- c("BSjuncName","Gene",usedColNames)
     toDisplay[is.na(toDisplay)] <- 0
     if (input$BSJ_data_source == "CircExplorer2")
     { Ularcirc_data$External_BSJ_GroupedDataSet$CE2 <-  normalise_raw_counts(rawData=toDisplay,
-                                                           colIDs = Groupings$SampleNames,
+                                                           colIDs = usedColNames,
                                                            Ularcirc_data$ProjectData$ReadsPerGene_Data,
                                                            input$LibraryStrandType)
     }
     else if (input$BSJ_data_source == "CIRI2")
     { Ularcirc_data$External_BSJ_GroupedDataSet$CIRI <-  normalise_raw_counts(rawData=toDisplay,
-                                                                             colIDs = Groupings$SampleNames,
+                                                                             colIDs = usedColNames,
                                                                              Ularcirc_data$ProjectData$ReadsPerGene_Data,
                                                                              input$LibraryStrandType)
     }
@@ -3093,6 +3105,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	                          background-color: rgb(203, 219, 248);border: 1px solid #ccc;border-radius: 4px;>',Genomic_FSJ_Sequence,'</pre></p>'))
 	})
 
+	# Following observeEvent is not active.
 	Fastq_Generate <- observeEvent(input$PE_Fastq_Request, #eventReactive(input$Update_Genome_Position,
 	   {	# This prepares a list of genome coordinates as submitted by user
 	      circRNA_Sequence <- Predicted_CircRNA_Sequence(circRNA_exons = Ularcirc_data$circRNA_exons, genelist = GeneList())
@@ -3131,7 +3144,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
         names(Read_Two) <- c("TypeIII_80","TypeIII_60", "TypeIII_40","TypeIII_20", TypeIV_Label,"TypeII_80","TypeII_60", "TypeII_40", "TypeII_20")
         Read_One <- DNAStringSet(x=Read_One)
         Read_Two <- reverseComplement(DNAStringSet(x=Read_Two))
-        browser()
+     #   browser()
         a<- "You now have the chance to save this output"
         a<- "quick before it is too late"
         # writeXStringSet( Read_One,"test_R1.fastq.gz",compress = TRUE, format="fastq")
@@ -3402,8 +3415,6 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	 withProgress(message="Loading project data. Be patient", value=0, {
 	     incProgress(1/2, detail = paste("Warning:: status bar cannot increment"))
 
-#browser()
-
   	    if (exists("ProjectGroupings"))   # Remove existing project Grouping before loading in new data
   	    { remove(ProjectGroupings) }
   	    if (exists("meta_data"))
@@ -3415,9 +3426,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	      incProgress(1/2, detail = paste("Done !! "))
 	      Ularcirc_data$ProjectData <- DataSet
 
+browser()
 
 	      if (exists("ProjectGroupings"))
-	      {  Groupings$SampleNames <- ProjectGroupings    }
+	      {  Groupings$SampleNames <<- ProjectGroupings    }
 
 	      FileTypeCounts$STAR_BSJ <<- length(table(Ularcirc_data$ProjectData$Junctions$DataSet))
 	      FileTypeCounts$STAR_FSJ <<- length(table(Ularcirc_data$ProjectData$Canonical_AllData$DataSet))
@@ -3580,8 +3592,6 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
     })
 
     output$DisplayDataSetButtons <- renderUI({
-
-
       # The following source variables are in correct order
           BSJ_sources <- c(CIRI2="CIRI2", CircExplorer2="CircExplorer2", STAR="STAR")
            FSJ_sources <- c(STAR="STAR", QORTS="QORTS", Regtools="Regtools")
@@ -3591,14 +3601,19 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
       availableData <- (DataSources_count > 0)
       BSJ_sources <- BSJ_sources[availableData[1:3]]
       FSJ_sources <- FSJ_sources[availableData[4:6]]
-  #    browser()
+
+      BSJ_RadioButton <- ''
+      FSJ_RadioButton <- ''
+      if (length(BSJ_sources) > 0)
+      { BSJ_RadioButton <- HTML(paste(radioButtons("BSJ_data_source", "BSJ data source:", BSJ_sources, inline = TRUE))) }
+      if (length(FSJ_sources) > 0)
+      { FSJ_RadioButton <- HTML(paste(radioButtons("FSJ_data_source", "FSJ data source:", FSJ_sources, inline = TRUE))) }
+#browser()
 
       div(id="DataSource", style="display: inline-block;",
-        radioButtons("BSJ_data_source", "BSJ data source:", BSJ_sources, inline = TRUE),
-
-        radioButtons("FSJ_data_source", "FSJ data source:", FSJ_sources, inline = TRUE)
-#               c("STAR" = "STAR"), inline=TRUE)
-#                  "Regtools" = "Regtools"),inline = TRUE)
+      #  radioButtons("BSJ_data_source", "BSJ data source:", BSJ_sources, inline = TRUE),
+          BSJ_RadioButton, FSJ_RadioButton
+       # radioButtons("FSJ_data_source", "FSJ data source:", FSJ_sources, inline = TRUE)
       ) # div
     })
 
@@ -3731,10 +3746,21 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 #   	  w <- paste(w,selectInput("AllGroups","List of all groups",choices=allGroupNames,multiple=FALSE,selectize=FALSE,size=length(allGroupNames)))
   	  currentSelectedList <- input$AllGroups
   	  idx <- which(names(Groupings$SampleNames) == currentSelectedList)
-#browser()
 
-  	  w <- paste(w,selectInput("AssignedToThisGroupList","List of all groups",choices=Groupings$SampleNames[[idx]],
-  	                           multiple=FALSE,selectize=FALSE,size=5))
+
+  	  AssignedMessage<- paste("Sample assigned", Groupings$SampleNames[idx])
+
+  	  w <- paste(w, fluidRow( column(6,
+  	                                 selectInput("AssignedToThisGroupList",AssignedMessage,choices=Groupings$SampleNames[[idx]],
+  	                                                                  multiple=FALSE,selectize=FALSE,size=5),
+  	                                actionButton(inputId = "RemoveFromGroup",label = "Remove Selected")),
+  	                          column(6,
+  	                                 selectInput("NotAssignedToAnyGroup","List of unassigned samples",choices=c(""),
+  	                                                                  multiple=FALSE,selectize=FALSE,size=5),
+  	                                 actionButton(inputId = "AddToGroup",label = "Assign Selected"))
+  	                         ) #fluidRow(
+  	             )
+
 
   	  HTML(w)
   	})
@@ -3760,10 +3786,13 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  for(i in 1:GroupNumber)
   	  { #inputId, label, value
   	    groupIDs <- paste("Group",SampleIDs[i],sep = "_")
- # 	    w <- paste(w,textInput(inputId=groupIDs, label=groupIDs, value=groupIDs))
+
         allGroupNames <- c(allGroupNames, groupIDs)
   	  }
   	  w <- paste(w,selectInput("AllGroups","List of all groups",choices=allGroupNames,multiple=FALSE,selectize=FALSE,size=length(allGroupNames)))
+  	  w <- paste(w,actionButton("AddNewSampleGroup","Add group"))
+  	  w <- paste(w,actionButton("RemoveSampleGroup","Remove group"))
+
   	  HTML(w)
   	})
 
@@ -3802,43 +3831,52 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  HTML(w)
   	})
 
+  	observeEvent(input$AddNewSampleGroup, {
+#browser()
+  	    a <- length(Groupings$SampleNames) + 1
+  	    Groupings$SampleNames[[a]] <- ''
+  	    names(Groupings$SampleNames)[a] <- paste("Group_",a)
+
+
+  	})
+
   	CreateBiologicalGroupings <- #observeEvent(Groupings, {  #
   	  reactive( {   ## This code will assemble list of samples
-#browser()
+# browser()
   	  inFile = Ularcirc_data$ProjectData$SampleIDs
 
   	  Existing_Group_number <- length(Groupings$SampleNames)
   	  # Following if statements look after group size changes
   	  if ((is.null(input$Number_BiologicalSamples)) || (is.null(inFile)))
   	  { return() }
-  	  if (Existing_Group_number > input$Number_BiologicalSamples)  # Make sure any entries in groups that are to be trimmed are assigned elsewhere
-  	  {
-  	    for(i in Existing_Group_number:(input$Number_BiologicalSamples+1))
-  	    { Groupings$SampleNames[[i]] <<- c(Groupings$SampleNames[[1]], Groupings$SampleNames[[i]])  # Copy samples from list that is about to be deleted
-  	      Groupings$SampleNames[i] <<- NULL
-  	    }
-  	  }
-  	  if (Existing_Group_number < input$Number_BiologicalSamples)  # Add extra group(s)
-  	  {
-  	    SampleIDs <- {} # input$groupIDs[Existing_Group_number:input$Number_BiologicalSamples]
-  	    if (Existing_Group_number==0)
-  	    {  Existing_Group_number <- 1  }
-  	    GroupLookupIDs <- paste("Group",seq(from=Existing_Group_number, to=input$Number_BiologicalSamples, by=1),sep="_") # Create unique numeric group IDs
-  	    input_names <- names(input)[which(names(input)== GroupLookupIDs)] # Indexes to group
+ # 	  if (Existing_Group_number > input$Number_BiologicalSamples)  # Make sure any entries in groups that are to be trimmed are assigned elsewhere
+  #	  {
+  #	    for(i in Existing_Group_number:(input$Number_BiologicalSamples+1))
+  #	    { Groupings$SampleNames[[i]] <<- c(Groupings$SampleNames[[1]], Groupings$SampleNames[[i]])  # Copy samples from list that is about to be deleted
+  #	      Groupings$SampleNames[i] <<- NULL
+  #	    }
+  #	  }
+#  	  if (Existing_Group_number < input$Number_BiologicalSamples)  # Add extra group(s)
+ # 	  {
+  #	    SampleIDs <- {} # input$groupIDs[Existing_Group_number:input$Number_BiologicalSamples]
+  #	    if (Existing_Group_number==0)
+  #	    {  Existing_Group_number <- 1  }
+  #	    GroupLookupIDs <- paste("Group",seq(from=Existing_Group_number, to=input$Number_BiologicalSamples, by=1),sep="_") # Create unique numeric group IDs
+  #	    input_names <- names(input)[which(names(input)== GroupLookupIDs)] # Indexes to group
 
 
-  	   if (length(input_names) == 0)     # This will catch if group names are not assigned in "input" yet.
-  	   { SampleIDs <- GroupLookupIDs  }
-  	   else
-  	   {   for (i in 1:length(input_names))
-  	       { SampleIDs<- c(SampleIDs, input[[ input_names[i] ]])     }
-  	    }
-  	    Groupings$SampleNames <- c(Groupings$SampleNames, vector("list",(input$Number_BiologicalSamples-Existing_Group_number)))  # Add some blank list elements
+  #	   if (length(input_names) == 0)     # This will catch if group names are not assigned in "input" yet.
+  #	   { SampleIDs <- GroupLookupIDs  }
+  #	   else
+  #	   {   for (i in 1:length(input_names))
+  #	       { SampleIDs<- c(SampleIDs, input[[ input_names[i] ]])     }
+  #	    }
+  #	    Groupings$SampleNames <- c(Groupings$SampleNames, vector("list",(input$Number_BiologicalSamples-Existing_Group_number)))  # Add some blank list elements
 
-  	    if (length(SampleIDs) == length(Groupings$SampleNames))
-  	    {        names(Groupings$SampleNames) <<- SampleIDs    }
+#  	    if (length(SampleIDs) == length(Groupings$SampleNames))
+ # 	    {        names(Groupings$SampleNames) <<- SampleIDs    }
 
-  	  }
+  #	  }
 
   	 # browser()
   	  # Following if statements look after re-assignment of samples to groups
@@ -3848,7 +3886,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  } # Assign all samples to group 1 as only 1 group
   	  else if (! is.null(input$groupIDs))
   	  { if ( input$AssignToGroup )      # If Assign to group action Button has been pressed start reassignment
-    	  { browser()
+    	  { #browser()
   	      Samples_to_Reassign <- input$SamplesAssignedToGroup
     	     GroupID <- input$AssignedGroupID
     	     AllGroupIDs <- input$groupIDs

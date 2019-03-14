@@ -28,7 +28,8 @@ shinyUI(
     sidebarPanel(
 
 		conditionalPanel('input.PanelSelect === "Setup"',
-		    selectizeInput("Setup_Options",label="Setup configuration",
+#		    selectizeInput("Setup_Options",label="Setup configuration",
+        radioButtons("Setup_Options",label="Setup configuration",
 		                                choices = c('Load transcript database','Load new data', 'CircRNA education')),br(),br(),
 		    conditionalPanel('input.Setup_Options == "Load transcript database"',
   				h4('ORGANISM',style="color:red"),
@@ -165,7 +166,7 @@ shinyUI(
     		    checkboxInput('Display_FAD', 'Display Distribution of reads across BSJ',FALSE),br(),
     		    sliderInput("FragSize", "Fragment size:",min = 100, max = 500, value = 300),
     		    sliderInput("ReadLength", "Read length:",min = 50, max = 300, value = 100),
-    		    actionButton("PE_Fastq_Request", "Generate fastq file (paired end)"),br(),
+  #  		    actionButton("PE_Fastq_Request", "Generate fastq file (paired end)"),br(),
   				  br()), # conditionalPanel('input.Junction_View_Mode == "Backsplice"',
 
   	  	conditionalPanel('input.Junction_View_Mode == "Canonical"',
@@ -357,43 +358,6 @@ shinyUI(
 
 				),		# tabPanel 'Gene_View'
 
-	    tabPanel('Genome_View',
-	         conditionalPanel(condition = "output.fileUploaded == false",
-	                          br(),br(),
-	                          h4('No uploaded file detected, please wait or go back to "Setup" tab and load a data set',style="color:red"),
-	                          br()),
-
-	         conditionalPanel(condition = "output.fileUploaded == true",
-
-	                          verbatimTextOutput("ShowDataSets_on_Genome_View"),
-
-	                          plotOutput("genomePlot"),
-
-	                          conditionalPanel(condition = "input.ShowExonTable == true ",
-	                                           h5('Exon Table') #,
-	                                           #DT::dataTableOutput("ExonTable")  # Need to make genome version
-	                          ),
-
-	                          conditionalPanel(condition = "input.ShowGeneJunctionTable == true ",
-	                                           h5('Junction table')
-	                                           #DT::dataTableOutput("JunctionTable") # Need to make genome version
-	                          ),
-	                          conditionalPanel(condition = "input.ShowGenomeCanonicalCountTable == true",
-	                                           h5('Canonical Junction table'),
-	                                           DT::dataTableOutput("GenomeCanonicalJunctionCountTable")
-	                                           ), # conditionalPanel(condition = "ShowGenomeCanonicalCountTable == true",
-	                          conditionalPanel(condition = "input.ShowFSJ_Sequence == true",
-	                                           h5('Junction sequence'),
-	                                           uiOutput("Predicted_Genomic_Junction_Sequence")
-	                                            ),
-
-	                          br())
-
-
-
-	    ),		# tabPanel 'Genome_View'
-
-
 			tabPanel('Junction_View',
 				conditionalPanel(condition = "output.fileUploaded == false",
 					br(),br(),
@@ -440,11 +404,47 @@ shinyUI(
 				    verbatimTextOutput("DisplayCanonical_sequence"),br(),br(),   #renderText
 				    br()),
 				  br()
-				) 		# tabPanel 'Junction_View'
+				), 		# tabPanel 'Junction_View'
+# Blocking out Genome_View panel unless specifically selected
+conditionalPanel('input.DisplayMode == "whatever"',
+       tabPanel('Genome_View',
+                conditionalPanel(condition = "output.fileUploaded == false",
+                                 br(),br(),
+                                 h4('No uploaded file detected, please wait or go back to "Setup" tab and load a data set',style="color:red"),
+                                 br()),
+
+                conditionalPanel(condition = "output.fileUploaded == true",
+
+                                 verbatimTextOutput("ShowDataSets_on_Genome_View"),
+
+                                 plotOutput("genomePlot"),
+
+                                 conditionalPanel(condition = "input.ShowExonTable == true ",
+                                                  h5('Exon Table') #,
+                                                  #DT::dataTableOutput("ExonTable")  # Need to make genome version
+                                 ),
+
+                                 conditionalPanel(condition = "input.ShowGeneJunctionTable == true ",
+                                                  h5('Junction table')
+                                                  #DT::dataTableOutput("JunctionTable") # Need to make genome version
+                                 ),
+                                 conditionalPanel(condition = "input.ShowGenomeCanonicalCountTable == true",
+                                                  h5('Canonical Junction table'),
+                                                  DT::dataTableOutput("GenomeCanonicalJunctionCountTable")
+                                 ), # conditionalPanel(condition = "ShowGenomeCanonicalCountTable == true",
+                                 conditionalPanel(condition = "input.ShowFSJ_Sequence == true",
+                                                  h5('Junction sequence'),
+                                                  uiOutput("Predicted_Genomic_Junction_Sequence")
+                                 ),
+
+                                 br())
+
+       )		# tabPanel 'Genome_View'
+) # conditionalPanel(condition = 'input.DisplayMode == "whatever"',
+
+
 
 			)	# tabsetPanel
-
-
 
     ) # main panel
   ) # sidebarLayout
