@@ -161,8 +161,12 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
 	  labelgenome( chrom, chromstart,chromend,n=3,scale="Mb")
 
 
-	  ## Plot linear junctions
-	  bedJunctions <- GeneObject$Transcript_Canonical_juncs
+	  ## Plot linear junctions. First need to collapse all common entries
+#browser()
+	  temp <- group_by(GeneObject$Transcript_Canonical_juncs, chrom, start, name,  end, strand)
+	  bedJunctions <- as.data.table(summarise(temp,total=sum(score)))
+
+#	  bedJunctions <- GeneObject$Transcript_Canonical_juncs
 
 	  color_to_graph <- rep(1,nrow(bedJunctions))
 	  if (! is.null(Junction_highlight$Canonical$Chr))
@@ -174,7 +178,7 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
 	  }
 	  # chrom1 start1 end1 chrom2 start2 end2 name score strand1 strand2 samplenumber
 
-	  bedJunctions <- bedJunctions[,.(chrom, start, start, chrom, end, end, name, score, strand, strand)]
+	  bedJunctions <- bedJunctions[,.(chrom, start, start, chrom, end, end, name, total, strand, strand)]
 	  setnames(bedJunctions,1:10,c("chrom1","start1", "end1", "chrom2", "start2", "end2", "name", "score", "strand1", "strand2"))
 
 	  pbpe = plotBedpe(bedJunctions, chrom, chromstart, chromend, heights = bedJunctions$score, plottype="loops", color = color_to_graph)
@@ -3053,17 +3057,21 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	output$DisplayCanonical_sequence <- renderText({  #renderUI ({
 	  # Obtain current canonical junction and obtain genomic sequence
 	  if (is.null(Ularcirc_data$SelectedCanonical$Chr))
-	  {  return (NULL)}
-	  strandDonor <- "+"
-	  if (Ularcirc_data$SelectedCanonical$Strand == 1)
-	  {   strandDonor <- "-" }
+	  {
+	    toDisplay <- c("No forward splice junction (FSJ) selected. Please select from FSJ table under Gene view tab.")
+	  }
+	  else
+    {	  strandDonor <- "+"
+  	  if (Ularcirc_data$SelectedCanonical$Strand == 1)
+  	  {   strandDonor <- "-" }
 
-	  Canonical_Junc_Entry <- data.frame(chromDonor=as.character(Ularcirc_data$SelectedCanonical$Chr),
-	                                     startDonor=as.numeric(Ularcirc_data$SelectedCanonical$Start),
-	                                     startAcceptor=as.numeric(Ularcirc_data$SelectedCanonical$End),
-	                                     strandDonor=strandDonor,
-	                                     type="c" )
-    toDisplay <- Grab_BS_Junc_Sequence(Canonical_Junc_Entry, GeneList = GeneList())
+  	  Canonical_Junc_Entry <- data.frame(chromDonor=as.character(Ularcirc_data$SelectedCanonical$Chr),
+  	                                     startDonor=as.numeric(Ularcirc_data$SelectedCanonical$Start),
+  	                                     startAcceptor=as.numeric(Ularcirc_data$SelectedCanonical$End),
+  	                                     strandDonor=strandDonor,
+  	                                     type="c" )
+      toDisplay <- Grab_BS_Junc_Sequence(Canonical_Junc_Entry, GeneList = GeneList())
+    }
 
 	  HTML(toDisplay)
 	  # Set flag so that can display graphic?
@@ -3426,7 +3434,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	      incProgress(1/2, detail = paste("Done !! "))
 	      Ularcirc_data$ProjectData <- DataSet
 
-browser()
+#browser()
 
 	      if (exists("ProjectGroupings"))
 	      {  Groupings$SampleNames <<- ProjectGroupings    }
@@ -3574,17 +3582,17 @@ browser()
 	})
 
 
-    output$Gene_transcript_plot <- renderPlot({
-      GeneObject <- circRNA_Subset()  # Will need to separate gene transcript table from data
-      if (length(GeneObject) > 0)
-      {
+#    output$Gene_transcript_plot <- renderPlot({
+ #     GeneObject <- circRNA_Subset()  # Will need to separate gene transcript table from data
+  #    if (length(GeneObject) > 0)
+   #   {
 
-        chrom <- as.character(GeneObject$Transcript[1,.(chrom)])
-        chromstart = as.numeric(GeneObject$Transcript[1,.(start)])-15
-        chromend = as.numeric(GeneObject$Transcript[nrow(GeneObject$Transcript),.(stop)])+15
-        plotGenes(GeneObject$Transcript, chrom, chromstart, chromend, maxrows=50,height=0.4,plotgenetype="box")
-      }
-    })
+  #      chrom <- as.character(GeneObject$Transcript[1,.(chrom)])
+  #      chromstart = as.numeric(GeneObject$Transcript[1,.(start)])-15
+  #      chromend = as.numeric(GeneObject$Transcript[nrow(GeneObject$Transcript),.(stop)])+15
+  #      plotGenes(GeneObject$Transcript, chrom, chromstart, chromend, maxrows=50,height=0.4,plotgenetype="box")
+  #    }
+  #  })
 
 
     observe({
@@ -3617,7 +3625,8 @@ browser()
       ) # div
     })
 
-  	output$distPlot <- renderPlot ({    ## This will draw circRNA and linear junction abundance graphs.
+    ## This will draw circRNA and linear junction abundance graphs under Gene_View tab.
+  	output$plotFSJ_BSJ_GeneModel <- renderPlot ({
       # If no gene name is selected return null
   	  if ((is.null(Ularcirc_data$Current_SelectedGene))
   	      && (is.null(input$DisplayJunctionCountTable_row_last_clicked))
@@ -3655,9 +3664,8 @@ browser()
 		  DTE
 	  })
 
-  	output$genomePlot <- renderPlot ({    ## This will draw circRNA and linear junction abundance graphs on user defined genome coordinates
-
-
+  	## This will draw circRNA and linear junction abundance graphs on user defined genome coordinates
+  	output$genomePlot <- renderPlot ({
   	  g<- genes(GeneList()$transcript_reference)
   	  inverse <- gaps(g)
   	  FSJ <- makeGRangesFromDataFrame( Ularcirc_data$ProjectData$Canonical_AllData,seqnames.field = "chrom",start.field = "start", end.field = "end", keep.extra.columns = TRUE )

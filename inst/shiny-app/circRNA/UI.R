@@ -170,8 +170,7 @@ shinyUI(
   				  br()), # conditionalPanel('input.Junction_View_Mode == "Backsplice"',
 
   	  	conditionalPanel('input.Junction_View_Mode == "Canonical"',
-		        h4('Display local gene map'),
-		        h4('Display sequence - define squence length'),
+#		        h4('Display local gene map'),
 		        br()),
 		      br()
 
@@ -282,7 +281,7 @@ shinyUI(
 				      selectInput("GeneListDisplay", NULL, choices = NULL),
 				      actionButton(inputId = "Update_Gene_of_Interest",label = "Select Gene"),
 					   # uiOutput("DisplayDataSetButtons"),  # To display Ularcirc | circExplorer or other input data sets
-					    plotOutput("distPlot"),
+					    plotOutput("plotFSJ_BSJ_GeneModel"),
 
 					    conditionalPanel(condition = "input.ShowTranscriptTable == true ",
 					      h4('Transcript Table'),
