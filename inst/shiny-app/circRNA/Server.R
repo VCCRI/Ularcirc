@@ -1711,7 +1711,8 @@ debug(debugme)
     External_FSJ_DataSet = list(REGTOOLS=blankTable)
 #    ext_FSJ_output
   )
-  Groupings <- reactiveValues( SampleNames = list() )   # Groupings$SampleNames
+  Groupings <- reactiveValues( SampleNames = list(), # Groupings$SampleNames
+                               Unassigned = NULL)
 
 	captionText <- reactiveValues ()
 
@@ -1920,6 +1921,7 @@ debug(debugme)
 
       for(i in 1:a)   # This loop collects all data. Need to keep a copy of everything so in next loop can collate easily
       {
+
         if (Groupings$SampleNames[[i]][1] == "")
           next;  # Blank group, ignore and move to next entry
 
@@ -1937,6 +1939,7 @@ debug(debugme)
 
         if (input$BSJ_data_source == "CircExplorer2")
         {
+#browser()
           subsetted_by_sample <- subset(Ularcirc_data$ProjectData$ext_BSJ_output$CE2_data,DataSet == idx[[i]])
           temp <- group_by(subsetted_by_sample, geneSymbol, BSjuncName,  strandDonor)
         }
@@ -3573,11 +3576,12 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
 	# Set what junctions user wishes to view
 	JunctionOption <- reactive ({
-		JO <- 0 # Default is to view ALL junctions
-		if (input$JunctionType == "Backsplice")
-		{	JO <- 1	}
-		if (input$JunctionType == "Alternative Canonical")
-		{	JO <- 500	}
+		JO <- 0 # view ALL junctions
+		JO <- 1  # Backsplice junctions
+#		if (input$JunctionType == "Backsplice")
+#		{	JO <- 1	}
+#		if (input$JunctionType == "Alternative Canonical")
+#		{	JO <- 500	}
 		JO
 	})
 
@@ -3729,7 +3733,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	    return(NULL)
   	  else
   	  { 	HTML(paste(sliderInput("Gene_Zoom", "Define region within gene to view:",min = Gene_min-zoomOffset, max = Gene_max+zoomOffset, value = c(Gene_min-15,Gene_max+15)),
-  	                actionButton("Navigate_Around_Gene","Navigate")) )
+  	                actionButton("Navigate_Around_Gene","Update")) )
   	   }
   	})
 
@@ -3739,31 +3743,28 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  { return() }
 
   	  SampleIDs <- {}
-      for (i in 1:input$Number_BiologicalSamples)
-      { lookupID <- paste("Group",i,sep="_")
-  	    SampleIDs <- c(SampleIDs, input[[lookupID]])
-      }
+
   	  w <- ""
-  	  for(i in 1:input$Number_BiologicalSamples)
-  	  { #groupIDs <- paste("Group",SampleIDs[i])
-  	    w <-  paste(w,column(3,checkboxGroupInput('SamplesAssignedToGroup', SampleIDs[i], CreateBiologicalGroupings()[[i]])))
-  	  }
-  	  w <- paste(w,selectizeInput("AssignedGroupID",label="Assign checked samples to group:",choices = SampleIDs))
-  	  w <- paste(w, actionButton(inputId = "AssignToGroup",label = "Assign"))
+ # 	  w <- paste(w,selectizeInput("AssignedGroupID",label="Assign checked samples to group:",choices = SampleIDs))
+  #	  w <- paste(w, actionButton(inputId = "AssignToGroup",label = "Assign"))
 
 #   	  w <- paste(w,selectInput("AllGroups","List of all groups",choices=allGroupNames,multiple=FALSE,selectize=FALSE,size=length(allGroupNames)))
   	  currentSelectedList <- input$AllGroups
   	  idx <- which(names(Groupings$SampleNames) == currentSelectedList)
+#browser()
 
+  	  AssignedMessage<- paste("Sample assigned", names(Groupings$SampleNames)[idx])
+  	  AssignedSampleIds <- ''
+  	  if (length(idx) > 0)
+    	{  AssignedSampleIds <- Groupings$SampleNames[[idx]]  }
 
-  	  AssignedMessage<- paste("Sample assigned", Groupings$SampleNames[idx])
 
   	  w <- paste(w, fluidRow( column(6,
-  	                                 selectInput("AssignedToThisGroupList",AssignedMessage,choices=Groupings$SampleNames[[idx]],
+  	                                 selectInput("AssignedToThisGroupList",AssignedMessage,choices=AssignedSampleIds,
   	                                                                  multiple=FALSE,selectize=FALSE,size=5),
-  	                                actionButton(inputId = "RemoveFromGroup",label = "Remove Selected")),
+  	                                actionButton(inputId = "RemoveFromGroup",label = "Unassign Selected")),
   	                          column(6,
-  	                                 selectInput("NotAssignedToAnyGroup","List of unassigned samples",choices=c(""),
+  	                                 selectInput("NotAssignedToAnyGroup","List of unassigned samples",choices=Groupings$Unassigned,
   	                                                                  multiple=FALSE,selectize=FALSE,size=5),
   	                                 actionButton(inputId = "AddToGroup",label = "Assign Selected"))
   	                         ) #fluidRow(
@@ -3784,8 +3785,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 #browser()
 
   	  w <- paste( sliderInput("Number_BiologicalSamples",
-  	              "Number of biological treatments in data set:",
-  	              min = 1, max = 10, value = GroupNumber))
+  	              "Number of samples:",
+  	              min = GroupNumber, max = GroupNumber, value = GroupNumber))
 
   	  SampleIDs <- seq(from=1, to=GroupNumber, by=1)
 
@@ -3843,10 +3844,61 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 #browser()
   	    a <- length(Groupings$SampleNames) + 1
   	    Groupings$SampleNames[[a]] <- ''
-  	    names(Groupings$SampleNames)[a] <- paste("Group_",a)
-
+  	    names(Groupings$SampleNames)[a] <- paste("Group_",a,sep="")
 
   	})
+
+  	observeEvent(input$AddToGroup,{
+  	  groupID <- input$AllGroups
+  	  sampleID <- input$NotAssignedToAnyGroup
+
+  	  if ((is.null(sampleID)) || (sampleID ==""))
+  	    return(NULL)
+
+  	  # Add to group
+  	  group_idx <- which(names(Groupings$SampleNames) == groupID)
+  	  Groupings$SampleNames[[group_idx]] <- c(Groupings$SampleNames[[group_idx]], sampleID)
+  	  blank_idx <- which(Groupings$SampleNames[[group_idx]] == "")
+  	  if (length(blank_idx))
+  	  {  # remove blanks
+  	    Groupings$SampleNames[[group_idx]] <- Groupings$SampleNames[[group_idx]][blank_idx * -1]
+  	  }
+  	  # Remove from unassigned
+  	  sample_idx <- which(Groupings$Unassigned == sampleID)
+  	  Groupings$Unassigned <- Groupings$Unassigned[sample_idx * -1]
+  	})
+
+  	observeEvent(input$RemoveSampleGroup, {  # This removes a complete group
+  	  GroupToRemove <- input$AllGroups
+#browser()
+      a <- which(names(Groupings$SampleNames) == GroupToRemove)
+      # Remove group and then re-name all groups
+      if (Groupings$SampleNames[[a]] != "")
+      { Groupings$Unassigned <- c(Groupings$Unassigned, Groupings$SampleNames[[a]])  }
+
+      Groupings$SampleNames <- Groupings$SampleNames[a * -1 ]
+      # Need to record a blank character which is checked in function Assemble_ExternalDataSet.
+
+
+      for (i in 1: length(Groupings$SampleNames))
+      { names(Groupings$SampleNames)[i] <- paste("Group_",i, sep="")
+      }
+  	})
+
+  	observeEvent(input$RemoveFromGroup, { # This removes a sample from a group
+  	  sampleID <- input$AssignedToThisGroupList
+  	  groupID <-  input$AllGroups
+  	  group_idx <- which(names(Groupings$SampleNames) == groupID)
+  	  sample_idx <- which(Groupings$SampleNames[[group_idx]] == sampleID)
+  	  Groupings$Unassigned <- c(Groupings$Unassigned, Groupings$SampleNames[[group_idx]][sample_idx ])
+  	  Groupings$SampleNames[[group_idx]] <- Groupings$SampleNames[[group_idx]][sample_idx * -1 ]
+
+
+  	  if (length(Groupings$SampleNames[[group_idx]]) == 0)
+  	  { Groupings$SampleNames[[group_idx]] <- ''  }
+
+  	})
+
 
   	CreateBiologicalGroupings <- #observeEvent(Groupings, {  #
   	  reactive( {   ## This code will assemble list of samples
@@ -3886,7 +3938,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
   #	  }
 
-  	 # browser()
+
   	  # Following if statements look after re-assignment of samples to groups
   	  if (input$Number_BiologicalSamples == 1)
   	  {   Groupings$SampleNames[[1]] <<-  inFile
@@ -3912,7 +3964,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
               }
              return(X)
            }
-
+#browser()
            Groupings$SampleNames <- lapply(Groupings$SampleNames, FUN=RemoveEntry, Samples_to_Reassign)
            Groupings$SampleNames[[GroupIdx]] <<- c(Groupings$SampleNames[[GroupIdx]],Samples_to_Reassign)
   	    }

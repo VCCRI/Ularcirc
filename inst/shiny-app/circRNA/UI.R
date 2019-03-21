@@ -89,11 +89,12 @@ shinyUI(
 				conditionalPanel('input.Display_Gene_View_Mode == "Display_Gene_Transcripts"',
 				    h4('Gene Display Options',style="color:red"),
 				    uiOutput("Display_Gene_Zoom_Coords"),
-				   # actionButton("Navigate_Around_Gene","Navigate"),
+				   # actionButton("Navigate_Around_Gene","Navigate"), # This button is now built on server side
   				  checkboxInput('ShowTranscriptTable', 'Display transcript table:',FALSE),
 				    checkboxInput('ShowBSJunctionCountTable', 'Display Backsplice junction count data',FALSE),
 				    checkboxInput('ShowCanonicalCountTable', 'Display Canonical junction count data',FALSE),
-				    radioButtons("JunctionType", "Junction Type:",choices = c("Backsplice","Alternative Canonical","All"), selected=c("Backsplice"))
+#				    radioButtons("JunctionType", "Junction Type:",choices = c("Backsplice","Alternative Canonical","All"), selected=c("Backsplice")),
+            br()
 				),
 				conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"',
 				    #radioButtons("Annotation_Options",label="Choose how data should be tabulated",
@@ -163,9 +164,9 @@ shinyUI(
       		    #			  checkboxInput('Sequence_motif_analysis', 'Search for sequence motifs',TRUE),
     		    checkboxInput('circRNA_sequence_checkbox','Display circRNA sequence', FALSE),
     		    checkboxInput('Display_STAR_junction_data', 'Display raw data',FALSE),
-    		    checkboxInput('Display_FAD', 'Display Distribution of reads across BSJ',FALSE),br(),
-    		    sliderInput("FragSize", "Fragment size:",min = 100, max = 500, value = 300),
-    		    sliderInput("ReadLength", "Read length:",min = 50, max = 300, value = 100),
+    #		    checkboxInput('Display_FAD', 'Display Distribution of reads across BSJ',FALSE),br(),
+    #		    sliderInput("FragSize", "Fragment size:",min = 100, max = 500, value = 300),
+  #  		    sliderInput("ReadLength", "Read length:",min = 50, max = 300, value = 100),
   #  		    actionButton("PE_Fastq_Request", "Generate fastq file (paired end)"),br(),
   				  br()), # conditionalPanel('input.Junction_View_Mode == "Backsplice"',
 
@@ -228,7 +229,7 @@ shinyUI(
 				  p('By identifying backsplice junctions (BSJ).
 				      A BSJ is ultimately  a 2nt sequence which represent a donor and acceptor base from asyncronous exon(s) sequence.
 				      Sequencing Reads from circRNA may not always include a BSJ. A type I read is indistinguisable from reads that align to linear RNA.
-              Type II/III/IV reads are those that cap capture a BSJ.
+              Type II/III/IV reads are those that capture a BSJ.
 				      The graph below demonstrates the longer a circRNA is the less chance of detecting a BSJ.'),
 				  plotOutput("circRNA_Read_Distribution"),
 
@@ -237,7 +238,7 @@ shinyUI(
             Highlighted cells estimate the coverage of read types that have not been detected.
 				    '),
 				  DT::dataTableOutput("Predicted_Read_Distribution"),
-				  p('* Detection of TypeIV reads may vary depending on the pipeline used and therefore what is displayed above may not be accurate'),
+		#		  p('* Detection of TypeIV reads may vary depending on the pipeline used and therefore what is displayed above may not be accurate'),
 			#    uiOutput("Predicted_Read_Distribution"),
 				  ## Table of expected Read type distributions
 
