@@ -177,9 +177,17 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
 	    color_to_graph[BSjunc_idx] <- 2      # Colour user selected junction; 2= red; 3 = light green ; 5 = light blue
 	  }
 	  # chrom1 start1 end1 chrom2 start2 end2 name score strand1 strand2 samplenumber
+#	  bedJunctions <- bedJunctions[,.(chrom, start, start, chrom, end, end, name, total, strand, strand)]
+	  bedJunctions <- data.table(chrom1=bedJunctions$chrom, start1=bedJunctions$start,
+	                             end1=bedJunctions$start, chrom2=bedJunctions$chrom,
+	                             start2=bedJunctions$end, end2=bedJunctions$end,
+	                             name=bedJunctions$name, score=bedJunctions$total,
+	                             strand1=bedJunctions$strand, strand2=bedJunctions$strand)
 
-	  bedJunctions <- bedJunctions[,.(chrom, start, start, chrom, end, end, name, total, strand, strand)]
-	  setnames(bedJunctions,1:10,c("chrom1","start1", "end1", "chrom2", "start2", "end2", "name", "score", "strand1", "strand2"))
+#	  bedJunctions <- as.dataframe(bedJunctions) # [,.(chrom, start, start, chrom, end, end, name, total, strand, strand)]
+
+#	  bedJunctions <- cbind(bedJunctions[,.(chrom, start, start, chrom, end, end, name, total, strand, strand)]
+#	  setnames(bedJunctions,1:10,c("chrom1","start1", "end1", "chrom2", "start2", "end2", "name", "score", "strand1", "strand2"))
 
 	  pbpe = plotBedpe(bedJunctions, chrom, chromstart, chromend, heights = bedJunctions$score, plottype="loops", color = color_to_graph)
 	  labelgenome(chrom, chromstart,chromend,n=3,scale="Mb")
@@ -2571,17 +2579,20 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 		    temp <- temp[,c("chrom", "start", "stop", "strandDonor", "score", "BSjuncName")]
 		    colnames(temp ) <- c("chrom1", "start1", "end2", "strand1", "score", "name")
 
-		    Ularcirc_data$BackSpliceJunctionCountTable <- temp
-		    temp<- temp[,c(1,2,2,1,3,3,6,5,4,4)]
-		    colnames(temp) <- c("chrom1", "start1", "end1", "chrom2", "start2","end2",
-		                        "name","score","strand1","strand2")
 
-# browser()
+		    Ularcirc_data$BackSpliceJunctionCountTable <- temp
+
+		    temp <- data.table(chrom1=temp$chrom1, start1=temp$start1,
+		                       end1=temp$start1, chrom2=temp$chrom1,
+		                       start2=temp$end2, end2=temp$end2,
+		                       name=temp$name, score=temp$score,
+		                       strand1=temp$strand1, strand2=temp$strand1)
+
         temp$JunctionType <- 1 #"Backsplice"
         #   chrom1    start1      end1 chrom2    start2      end2                          name score strand1 strand2
 
 		    # copy correct data back into PGO.
-		    PGO$Junctions$uniques.bed  <- as.data.table(temp)
+		    PGO$Junctions$uniques.bed  <- temp
 		  }
       else # "STAR chimeric junctions"
       {

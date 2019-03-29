@@ -30,7 +30,7 @@ shinyUI(
 		conditionalPanel('input.PanelSelect === "Setup"',
 #		    selectizeInput("Setup_Options",label="Setup configuration",
         radioButtons("Setup_Options",label="Setup configuration",
-		                                choices = c('Load transcript database','Load new data', 'CircRNA education')),br(),br(),
+		                                choices = c('Load transcript database','Upload new data', 'CircRNA education')),br(),br(),
 		    conditionalPanel('input.Setup_Options == "Load transcript database"',
   				h4('ORGANISM',style="color:red"),
   				selectizeInput("Annotation_lib",label="Annotation library",choices = List_Species_Files$Org_Annotation_Library, selected="NO_ANNOTATION"),  # List_Species_Files$Org_Annotation_Library[1]),
@@ -39,7 +39,7 @@ shinyUI(
   				textOutput("List_Loaded_TxDB"),  ###  DISPLAY CURRENT LOADED TXDB
   				br()), # 		    conditionalPanel('input.Setup_Options == "Load transcript database"',
 
-		    conditionalPanel('input.Setup_Options == "Load new data"',
+		    conditionalPanel('input.Setup_Options == "Upload new data"',
   				h4('FILTER OPTIONS:',style="color:red"),
 	  			checkboxInput('ChromosomeFilter', 'Same chromosomes:',TRUE),
 		  		conditionalPanel(condition ="input.ChromosomeFilter == true",
@@ -47,7 +47,7 @@ shinyUI(
 			  	checkboxInput('StrandFilter', 'Same strand:',TRUE),
 				  checkboxInput('CanonicalJuncs', 'DON\'T remove any canonical junctions',TRUE),
 
-	        fileInput('JunctionFile', 'Chimeric junction File(s)',multiple=TRUE),   # accept=c('text/csv', 'text/comma-separated-values,text/plain','.csv'),
+	        fileInput('JunctionFile', 'Upload input data files',multiple=TRUE),   # accept=c('text/csv', 'text/comma-separated-values,text/plain','.csv'),
 		      br()),   # conditionalPanel('input.Setup_Options == "Load new data"',
 
 		    conditionalPanel('input.Setup_Options == "CircRNA education"',
@@ -84,7 +84,7 @@ shinyUI(
 		    h4('DISPLAY MODE:',style="color:red"),
 		    radioButtons("Display_Gene_View_Mode", "",
 		    #selectizeInput("Display_Gene_View_Mode", "",
-		                 choices = c("Display_Gene_Transcripts","Tabulated_Counts"), selected=c("Tabulated_Counts")), #Display_Gene_Transcripts")),
+		                 choices = c("Display_Gene_Transcripts","Tabulate_BSJ_Counts"), selected=c("Tabulate_BSJ_Counts")), #Display_Gene_Transcripts")),
 
 				conditionalPanel('input.Display_Gene_View_Mode == "Display_Gene_Transcripts"',
 				    h4('Gene Display Options',style="color:red"),
@@ -96,7 +96,7 @@ shinyUI(
 #				    radioButtons("JunctionType", "Junction Type:",choices = c("Backsplice","Alternative Canonical","All"), selected=c("Backsplice")),
             br()
 				),
-				conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"',
+				conditionalPanel('input.Display_Gene_View_Mode == "Tabulate_BSJ_Counts"',
 				    #radioButtons("Annotation_Options",label="Choose how data should be tabulated",
 				    h4('Table Display Options',style="color:red"),
 				   # selectizeInput("Annotation_Options",label="Data analysis mode",
@@ -132,7 +132,7 @@ shinyUI(
 				                                    selected=c("Unique Number of circRNAs"))
 				    ),
 		        br()
-		    ), # conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"
+		    ), # conditionalPanel('input.Display_Gene_View_Mode == "Tabulate_BSJ_Counts"
 				br()
 			), #conditionalPanel
     conditionalPanel('input.PanelSelect == "Genome_View" && output.fileUploaded == true',
@@ -310,7 +310,7 @@ shinyUI(
 				  # Following conditionalPanel is set up based on previous menu settings shown below
 				  # selectizeInput("Annotation_Options",label="Data sets to analyse",
 				  #           choices = c('Selected','Grouped analysis'))
-				  conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"',
+				  conditionalPanel('input.Display_Gene_View_Mode == "Tabulate_BSJ_Counts"',
 				      conditionalPanel('input.Annotation_Options == "Selected"',
     					  #h4('Junction table of selected data sets'),
     					  uiOutput("BSJ_count_table_header"),
@@ -353,7 +353,7 @@ shinyUI(
 				          plotOutput("Global_Analysis_Plots")
 				          ),
 				        br() ), # conditionalPanel('input.Annotation_Options == "Grouped"',
-					   br() ), # conditionalPanel('input.Display_Gene_View_Mode == "Tabulated_Counts"',
+					   br() ), # conditionalPanel('input.Display_Gene_View_Mode == "Tabulate_BSJ_Counts"',
 					br() ) # conditionalPanel(condition = "output.fileUploaded == true",
 
 				),		# tabPanel 'Gene_View'
