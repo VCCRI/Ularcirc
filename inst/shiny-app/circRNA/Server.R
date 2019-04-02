@@ -1416,8 +1416,9 @@ extractGenomeSequence <- function(chr, start, end, strand, GeneList)
 ##
 Grab_BS_Junc_Sequence <- function(SelectUniqueJunct_Value, GeneList)
 {
-  toDisplay <- c("Error, No coordinate data to extract")
-  if (nrow(SelectUniqueJunct_Value) >= 1)
+  toDisplay <- c("Error, No coordinate data to extract or no BSJ selected")
+#browser()
+  if ((nrow(SelectUniqueJunct_Value) >= 1) && (SelectUniqueJunct_Value[1] != "ACTION REQUIRED"))
   { # Initially assume we have backsplice junciton
     Seq_length <- 125
 
@@ -1475,8 +1476,8 @@ Grab_BS_Junc_Sequence <- function(SelectUniqueJunct_Value, GeneList)
       if (TranscriptStrand =="-")
         toDisplay <- paste(AcceptorSequence, DonorSequence, sep=".") # Negative strand
     }
+    toDisplay <- gsub(pattern=" ",replacement="", x=toDisplay)              # Clean up space characters
   }
-  toDisplay <- gsub(pattern=" ",replacement="", x=toDisplay)              # Clean up space characters
 
   return(toDisplay)
 
@@ -1873,6 +1874,8 @@ debug(debugme)
 
       if (! is.null(inFile_idx))
       { idx[[1]] <- which( Ularcirc_data$ProjectData$SampleIDs == inFile_idx) }
+      else
+      { return (NULL) }
 
 
       if (input$BSJ_data_source == "CircExplorer2")
@@ -3040,9 +3043,14 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
 	output$CanonicalJunctionCountTable <- renderDataTable({
 
-	 # browser()
-	  a <- 1
-	      datatable(Ularcirc_data$CanonicalJunctionCountTable, selection='single', options = list(lengthMenu = c(5, 10, 50), pageLength = 5))
+	  toDisplay <- Ularcirc_data$CanonicalJunctionCountTable
+	  idx <- which(toDisplay$strand == 1)
+browser()
+	  toDisplay$strand = "-"
+	  toDisplay$strand[idx] = "+"
+	  datatable(toDisplay, selection='single', options = list(lengthMenu = c(5, 10, 50), pageLength = 5))
+
+#	      datatable(Ularcirc_data$CanonicalJunctionCountTable, selection='single', options = list(lengthMenu = c(5, 10, 50), pageLength = 5))
 	  })
 
 	output$GenomeCanonicalJunctionCountTable <- renderDataTable({

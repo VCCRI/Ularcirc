@@ -294,13 +294,13 @@ shinyUI(
 		              ), # conditionalPanel(condition = "output.ShowExonTable == true ",
 
 					    conditionalPanel(condition = "input.ShowBSJunctionCountTable == true ",
-						    h5('Backsplice Junction table') ,
+						    h4('Backsplice Junction table') ,
 						    downloadButton('download_BS_Junc_Count_Table','Download BSJ' ),
 						    DT::dataTableOutput("BS_Junction_Count_Table")
 					       ), # conditionalPanel(condition = "input.ShowBSJunctionCountTable == true "
 
 				 		  conditionalPanel(condition = "input.ShowCanonicalCountTable == true",
-			  		    h5('Canonical Junction table'),
+			  		    h4('Forward Junction table'),
 			  		    downloadButton('download_FSJ_Junc_Count_Table','Download FSJ' ),
 						    DT::dataTableOutput("CanonicalJunctionCountTable")
 		              ), # conditionalPanel(condition = "ShowCanonicalCountTable == true",
