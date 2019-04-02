@@ -400,7 +400,7 @@ Draw_Transcript_Exons<-function(GeneObject, JunctionOption, Zoom_coords, GenomeD
 	}
 
 	if (length(GeneObject$Junctions) == 1)	# No circRNAs to display. Just show transcript
-	{ if (length(GeneObject$Transcript_Canonical_juncs) == 13 ) # We have canonical junctions to view but no Backsplice.
+	{ if (length(GeneObject$Transcript_Canonical_juncs) == 7 ) # We have canonical junctions to view but no Backsplice.
   	{
 	    # Make a dummy backsplice junction object
 	    GeneObject$Junctions <- list()
@@ -411,7 +411,7 @@ Draw_Transcript_Exons<-function(GeneObject, JunctionOption, Zoom_coords, GenomeD
                            JunctionOption=JunctionOption, currentGeneSymbol=currentGeneSymbol )
 
 	  }
-	  if (length(GeneObject$Transcript_Canonical_juncs) != 13 )
+	  if (length(GeneObject$Transcript_Canonical_juncs) != 7 )
 	  { plotGenes(GeneObject$Transcript, chrom, chromstart, chromend, maxrows=50,height=0.4,plotgenetype="box")	}
 
 	  } # if (length(GeneObject$Junctions) == 1)
@@ -2483,6 +2483,33 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	  }
 	)
 
+	output$download_FSJ_BSJ_GeneModel_PDF <- downloadHandler(
+	  filename=function() {
+	    paste('FSJ-', Sys.Date(), '.csv', sep='')
+	  },
+	  content = function(filename) {
+	    #write.csv(Ularcirc_data$CanonicalJunctionCountTable,filename)
+	    pdf(filename)
+	    circs <- circRNA_Subset()
+	    if (is.null(circs))  # This will return NULL if no gene model database is loaded
+	    { return (NULL) }
+
+	    layout(matrix(c(#1,1,1,
+	      4,4,4,
+	      3,3,3,           ## backsplice junctions
+	      2,2,2,           # canonical junctions
+	      1,1,1           #  Transcripts
+	      #					5,6,7), 5, 3, byrow = TRUE))     # 4 rows of figures, first two rows contain one major image, while third and final row contains three items (will fill two using zoom feature of sushi)
+	    ), 4, 3, byrow = TRUE))      # 4 rows, three columns
+	    par(mar=c(3,4,1,1))
+	    Zoom_coords <- View_Gene_At_Coords()
+	    DTE <- Draw_Transcript_Exons(circs, JunctionOption(), Zoom_coords,
+	                                 Junction_highlight=list(BSjunc=Ularcirc_data$Current_Selected_BS_Junction, Canonical = Ularcirc_data$SelectedCanonical),
+	                                 currentGeneSymbol=Ularcirc_data$Current_SelectedGene)
+	    dev.off()
+	  }
+	)
+
   GeneList <- eventReactive( input$LoadTxDb,   # GeneList is called when transcript database is selected
 	{ require(GenomicFeatures)
 	  cat(paste("\n\nLoading species transcriptome coordinates", date()))
@@ -3185,8 +3212,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
   	 # if (nrow(UniqueJunctions) > 1)
   	 # {
-  	    if (length(Ularcirc_data$Current_SelectedGene) > 0)
-  	      GeneName <- Ularcirc_data$Current_SelectedGene
+  	    if (length(Ularcirc_data$SelectedGene_from_BSJ_Table) > 0)
+  	      GeneName <- Ularcirc_data$SelectedGene_from_BSJ_Table # Ularcirc_data$Current_SelectedGene
   	    else # Entry has not been annotated with gene name yet
   	    { GeneName <- Annotate_BS_Junc(DataSet=UniqueJunctions, GeneList = GeneList(), MaxDisplay = 1, input$LibraryStrandType, input=input)
   	      GeneName <- GeneName$Gene[1]          # Grab gene name
@@ -4043,7 +4070,6 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	    Ularcirc_data$Current_Selected_BS_Junction <- Ularcirc_data$PartialPooledDataSet$RAW$BSjuncName[SelectedRow]
   	    Ularcirc_data$Current_Selected_GeneCount   <- Ularcirc_data$PartialPooledDataSet$RAW$Freq[SelectedRow]
 
-
   	    updateSelectizeInput(session,inputId="GeneListDisplay", choices=GeneList()$GeneList, selected=Ularcirc_data$Current_SelectedGene, server=TRUE)
   	 })
 
@@ -4102,11 +4128,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	   { #browser()  # Need to return more data points .. see commented out variables below
   	     SelectedRow <- input$BS_Junction_Count_Table_row_last_clicked
   	     Ularcirc_data$Current_Selected_BS_Junction <- Ularcirc_data$BackSpliceJunctionCountTable$name[SelectedRow]
-  	     #Ularcirc_data$Current_SelectedGene         <- as.character(Ularcirc_data$External_BSJ_DataSet$RAW$Gene[SelectedRow])
-  	     #Ularcirc_data$Current_Selected_BS_Junction <- as.character(Ularcirc_data$External_BSJ_DataSet$RAW$BSjuncName[SelectedRow])
-  	     #Ularcirc_data$Current_Selected_GeneCount   <- as.character(Ularcirc_data$External_BSJ_DataSet$RAW$Freq[SelectedRow])
 
+#  browser()
 
+  	     SelectedGene_from_BSJ_Table <- Ularcirc_data$Current_SelectedGene       #  <- as.character(Ularcirc_data$External_BSJ_DataSet$RAW$Gene[SelectedRow])
 
   	   })
 

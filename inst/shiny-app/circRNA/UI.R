@@ -283,6 +283,7 @@ shinyUI(
 				      actionButton(inputId = "Update_Gene_of_Interest",label = "Select Gene"),
 					   # uiOutput("DisplayDataSetButtons"),  # To display Ularcirc | circExplorer or other input data sets
 					    plotOutput("plotFSJ_BSJ_GeneModel"),
+					   downloadButton('download_FSJ_BSJ_GeneModel_PDF','PDF' ),
 
 					    conditionalPanel(condition = "input.ShowTranscriptTable == true ",
 					      h4('Transcript Table'),
