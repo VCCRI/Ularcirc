@@ -197,6 +197,9 @@ List_Species_Files <- List_Genomes()
 zoomOffset <- 50000
 
 FileTypeCounts <- list(CIRI=0,CE2=0, STAR_BSJ=0, STAR_FSJ=0, QORTS=0, REGTOOLS=0)  # Keeps track of loaded data files
+# Same as above but following only used to reset global variable when needed.
+FileTypeCountsReset <- list(CIRI=0,CE2=0, STAR_BSJ=0, STAR_FSJ=0, QORTS=0, REGTOOLS=0)
+
 # Groupings <- list()
 
 

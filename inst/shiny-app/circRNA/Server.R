@@ -634,6 +634,12 @@ normalise_raw_counts <- function(rawData, colIDs="Freq", readsPerGene, LibrarySt
 
   for (i in 1:length(col_idx))
   {
+    if (! is.numeric(toDisplay$RAW[,col_idx[i]]))
+    { blurb <- paste("Data will not be normalised. Please contact developer with following details:",
+                     "normalise_raw_counts selecting", paste(colIDs, collapse=":"))
+      showModal(modalDialog(title="ERROR: unexpected values in table",blurb,easyClose=TRUE,footer=NULL))
+      return(toDisplay)
+    }
     toDisplay$TOTAL_COUNTS <- sum(toDisplay$RAW[,col_idx[i]])
     toDisplay$CPM[,col_idx[i]] <- round((toDisplay$RAW[,col_idx[i]] / toDisplay$TOTAL_COUNTS * 1000000),2)
 #    toDisplay$CPM$Freq <- round((toDisplay$RAW[,col_idx[i]] / toDisplay$TOTAL_COUNTS * 1000000),2)
@@ -706,7 +712,7 @@ LoadJunctionData <- function(filename, ChromFilter, StrandFilter, Genomic_Distan
 	# Filter for accepted file types by extension only
 	filename_idx <- grep(pattern = "\\.out.tab(.gz|)$", x = filename$name)
 	filename_idx <- c(filename_idx, grep(pattern = "\\.Chimeric.out.junction(.gz|)$", x = filename$name))
-	filename_idx <- c(filename_idx, grep(pattern = "\\.ce2(.gz|)$", x = filename$name))
+	filename_idx <- c(filename_idx, grep(pattern = "\\.ce(.gz|)$", x = filename$name))
 	filename_idx <- c(filename_idx, grep(pattern = "\\.ciri(.gz|)$", x = filename$name))
 
 	failed_IDs <- setdiff(filename$name, filename$name[filename_idx])
@@ -716,7 +722,7 @@ LoadJunctionData <- function(filename, ChromFilter, StrandFilter, Genomic_Distan
 	IDs <- unique(gsub(pattern="\\.SJ.out.tab(.gz|)$",replacement="",x=IDs))
 	IDs <- unique(gsub(pattern="\\.rtSJ.out.tab(.gz|)$",replacement="",x=IDs))
 	IDs <- unique(gsub(pattern="\\.ReadsPerGene.out.tab(.gz|)$",replacement="",x=IDs))
-	IDs <- unique(gsub(pattern="\\.ce2(.gz|)$",replacement="",x=IDs))
+	IDs <- unique(gsub(pattern="\\.ce(.gz|)$",replacement="",x=IDs))
 	IDs <- unique(gsub(pattern="\\.ciri(.gz|)$",replacement="",x=IDs))
 
 	IDs_idx <- {}      # This will record which entries were successfully loaded.
@@ -866,7 +872,7 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 	  }
 
 	  #  Load in circExplorer2 data set
-	  CE2_Idx <- grep(pattern=paste(IDs[i],".ce2(.gz|)",sep=""), x=filename$name )
+	  CE2_Idx <- grep(pattern=paste(IDs[i],".ce(.gz|)",sep=""), x=filename$name )
 	  if (length(CE2_Idx) > 0)
 	  {	FileTypeCounts$CE2 <<- FileTypeCounts$CE2 + 1
 
@@ -887,31 +893,31 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 	  #######################  Load in CIRI2 data set #####################
 	  ciri_Idx <- grep(pattern=paste(IDs[i],".ciri(.gz|)",sep=""), x=filename$name )
 	  if (length(ciri_Idx) > 0)
-	  { FileTypeCounts$CIRI <<- FileTypeCounts$CIRI + 1
-
-	    IDs_idx <- c(IDs_idx, IDs[i])
+	  {
 	    ciri_output <- read.table(filename$datapath[ciri_Idx[1]], header = TRUE, sep ="\t", fill = TRUE, comment.char="")
-	    # may need to adjust positions
-
 	    ciri_output$BSjuncName  <- paste(ciri_output$chr,":", ciri_output$circRNA_start,"-",
 	                                     ciri_output$circRNA_end,":",ciri_output$strand,sep="")
 	    colnames(ciri_output)[5] <- "Freq"
-	    # whatever <- ''
-	    ciri_output$gene_id <- ensembl_to_geneName(ciri_output$gene_id, input)
-	 #   browser()
-	    ciri_output$DataSet <- i
 
-	    if (! is.null(ext_BSJ_output$CIRI2_data))
-	    {    ext_BSJ_output$CIRI2_data <- rbind(ext_BSJ_output$CIRI2_data, ciri_output) }
-	    else
-	    {    ext_BSJ_output$CIRI2_data <- ciri_output    }
+	    ciri_output$gene_id <- ensembl_to_geneName(ciri_output$gene_id, input)
+      if (! is.null(ciri_output$gene_id))  # Only can proceed if gene model is loaded.
+      {
+        FileTypeCounts$CIRI <<- FileTypeCounts$CIRI + 1
+        IDs_idx <- c(IDs_idx, IDs[i])
+  	    ciri_output$DataSet <- i
+
+  	    if (! is.null(ext_BSJ_output$CIRI2_data))
+  	    {    ext_BSJ_output$CIRI2_data <- rbind(ext_BSJ_output$CIRI2_data, ciri_output) }
+  	    else
+  	    {    ext_BSJ_output$CIRI2_data <- ciri_output    }
+      }
 	  }
+
+
 	  listID <- paste("Group_",i,sep="")
     SampleList[listID] <- IDs[i]
 	 } # 	for (i in 1: length(IDs))
 
-#browser()  # Groupings is not assigned within this function
-#Groupings$SampleNames <- SampleList
 
 }) # withProgress
 
@@ -1275,18 +1281,26 @@ BS_Junc_details <- function(JuncCoords)
 }
 
 ##########################################################3
+## ensembl_to_geneName
 ##
+## Converts ensembl IDs to gene symbol IDs.
 ##
-##
-##
-##
-##
+## Returns list of symbol IDs
+## Returns NULL if no annotation package is loaded.
 ##
 ensembl_to_geneName <- function(ensembl_IDs, input)
 {
   ## Load required annotation functions
   # ensembl
-  all_functions <- ls(paste("package", input$Annotation_lib, sep=":"))
+  all_functions <- try(ls(paste("package", input$Annotation_lib, sep=":")),silent=TRUE)
+  if (length(grep(pattern = "Error", x = all_functions[1])) )
+  {  blurb <- c("CIRI data requires an organism and transcriptional database to be loaded.
+                Please select \"Load transcript database\" under Project tab.
+                Then select an organism and transcript database and load.
+                After this is omplete you can then try loading CIRI data again")
+    showModal(modalDialog(title="ERROR: Annotation database not loaded",blurb,easyClose=TRUE,footer=NULL))
+    return(NULL)
+  }
   ensembl_idx <- grep(pattern = "egENSEMBL2EG$",x = all_functions)
   geneEnsembl <- as.list(get(all_functions[ensembl_idx]))
   geneEnsembl <- get(all_functions[ensembl_idx])
@@ -1811,6 +1825,7 @@ debug(debugme)
 	  { remove(ProjectGroupings) }
 	  if (exists("meta_data"))
 	  { remove(meta_data)}
+	  FileTypeCounts <<- FileTypeCountsReset  # Reset file type count before rebuilding.
 
 		inFile <- input$JunctionFile
 
@@ -1858,9 +1873,12 @@ debug(debugme)
 	##
   Assemble_ExternalDataSet <- observeEvent(input$buildTable_Button,{
     if (length(input$BSJ_data_source) == 0)
-    { #browser()
-      a<- 1
-      a<- "Debug"
+    { blurb <- c("Need to upload new data or load an existing project data before a table of BSJ counts can be assembled.
+                 New data is uploaded under setup tab selecting \"Upload new data\".
+                 Project data is loaded under Project tab.
+                 When sample IDs are shown under Project tab you can then return here to build count table.")
+      showModal(modalDialog(title="ERROR: NO data loaded",blurb,easyClose=TRUE,footer=NULL))
+      return(NULL)
     }
 
 	    if (input$BSJ_data_source == "STAR")
@@ -2013,6 +2031,9 @@ debug(debugme)
 	# This function will build table on either individual or grouped selected individual data sets.
 
 	PartialPooledDataSet <- observeEvent(input$buildTable_Button, { # reactive({
+	  if (length(input$BSJ_data_source) == 0)   # No data loaded
+	  {	  return(NULL)  }
+
 
 	  if (input$BSJ_data_source != "STAR")
 	  { return(NULL)}
@@ -2690,6 +2711,9 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
 	output$Display_externalBSJ_CountTable<- renderDataTable({   # DisplayAllJunctions <- renderDataTable({
 
+	  if (length(input$BSJ_data_source) == 0)  # No data loaded.
+	  {   return(NULL)  }
+
 	  if (! input$buildTable_Button)# If annotation button has not been pressed do nothing.
 	  { return(data.frame(c(ACTION_REQUIRED="Please select build table on left hand tab"))); }
 
@@ -2744,6 +2768,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	})
 
 	output$Display_externalBSJ_GroupCountTable<- renderDataTable({   # DisplayAllJunctions <- renderDataTable({
+	  if (length(input$BSJ_data_source) == 0)  # No data loaded.
+	  {   return(NULL)  }
 
 	  if (! input$buildTable_Button)# If annotation button has not been pressed do nothing.
 	  { return(data.frame(c(ACTION_REQUIRED="Please select build table on left hand tab"))); }
@@ -3045,7 +3071,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
 	  toDisplay <- Ularcirc_data$CanonicalJunctionCountTable
 	  idx <- which(toDisplay$strand == 1)
-browser()
+	  toDisplay$strand = NULL
 	  toDisplay$strand = "-"
 	  toDisplay$strand[idx] = "+"
 	  datatable(toDisplay, selection='single', options = list(lengthMenu = c(5, 10, 50), pageLength = 5))
@@ -3773,12 +3799,12 @@ browser()
   	output$Display_Gene_Zoom_Coords <- renderUI ({
   	  # Draw slider input to define regions to display
   	  Gene_Transcripts = circRNA_Subset()
-  	  Gene_min <- min(Gene_Transcripts$Transcript$start)
-  	  Gene_max <- max(Gene_Transcripts$Transcript$stop)
   	  if (is.null(Gene_Transcripts))
   	    return(NULL)
   	  else
-  	  { 	HTML(paste(sliderInput("Gene_Zoom", "Define region within gene to view:",min = Gene_min-zoomOffset, max = Gene_max+zoomOffset, value = c(Gene_min-15,Gene_max+15)),
+  	  {  	  Gene_min <- min(Gene_Transcripts$Transcript$start)
+        	  Gene_max <- max(Gene_Transcripts$Transcript$stop)
+  	        HTML(paste(sliderInput("Gene_Zoom", "Define region within gene to view:",min = Gene_min-zoomOffset, max = Gene_max+zoomOffset, value = c(Gene_min-15,Gene_max+15)),
   	                actionButton("Navigate_Around_Gene","Update")) )
   	   }
   	})

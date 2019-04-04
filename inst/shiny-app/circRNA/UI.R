@@ -8,6 +8,10 @@ library(DT)
 
 
 options(shiny.maxRequestSize=900*1024^2)  # Set upper limit at 900MB
+ularcircVersion <- try(packageVersion("Ularcirc"),silent=TRUE)
+if (length(grep(ularcircVersion, pattern = "Error")) > 0)
+{  ularcircVersion <- "Not detected" }
+
 
 List_Saved_Projects<-function()
 {
@@ -187,22 +191,21 @@ shinyUI(
 			id = 'PanelSelect',
 			tabPanel('Setup',
 				conditionalPanel('input.Setup_Options == "Load transcript database"',
-  				p('Welcome to Ularcirc!'),
+  				p(paste('Welcome to Ularcirc! Version:',ularcircVersion)),
   				p('If you are new to circular RNAs you may want to select "circRNA Education" from setup options configuration menu on left.',
-              'Don\'t forget to come back here when done'),
+              'Don\'t forget to come back here when done.'),
 
   				p(h4('Instructions:'),' To get started follow the steps listed below:'),br(),
   				p(strong('STEP 1:'),'Load transcriptional database.',br(),
             'Select appropriate organism, genome and transcript database options and press load in side tab.',br(),
-  				  'The database loaded will be listed below LOAD button when ready'),br(),
+  				  'The database loaded will be listed below LOAD button when ready.'),br(),
 
-  				br(),
   				p(strong('STEP 2: '),'Load data.',br(),
               'This can either be an existing project which can be loaded under the Project tab.',br(),
   				    'Alternatively you can uploading new data. Select "Load new data" under setup option configuration on side menu.',
   				    'Select filter options and then click upload file button to load data.
                 Once data is loaded you can navidate to project tab to save as a project.
-  				      Note that reads that are filtered out are removed permanently'),
+  				      Note that reads that are filtered out are removed permanently.'),
   				br(),
   				p(strong('STEP 3: '),'Search for circRNA.',br(),
   				  'Under Gene tab you can either navidate to your favourite gene or build tables of abundant circRNAs.',
@@ -210,13 +213,13 @@ shinyUI(
 
   				br(),
   				p(strong('STEP 4: '),'Explore junction data.',br(),
-  				  'After selecting junction(s) of interest navigate to the Junction tab which will provide a detailed report on the type of junction selected'),
+  				  'After selecting junction(s) of interest navigate to the Junction tab which will provide a detailed report on the type of junction selected.'),
 
   				br(),br(),
-  				p('Keep an eye on the Ularcirc website for future updates and functionality'),
+  				p('Keep an eye on the Ularcirc website for future updates and functionality.'),
   				br()),   #conditionalPanel('input.Setup_Options == "Load transcript database"',
 
-				conditionalPanel('input.Setup_Options == "Load new data"',
+				conditionalPanel('input.Setup_Options == "Upload new data"',
 
     			h4("Input file details:"),
 				  tableOutput("FileNameDataTable"),
@@ -348,7 +351,8 @@ shinyUI(
 				        #  DT::dataTableOutput("DisplayJunctionCountTable"),
 				          br() ),
 				        conditionalPanel('input.Global_Analysis_Plots_Options == "Heatmap"',
-				          selectInput("HeatmapGeneNumber",label="Number of variable genes",choices = seq(from=10,to=50,by=10),selected = 10)
+				          selectInput("HeatmapGeneNumber",label="Number of variable genes",choices = seq(from=10,to=50,by=10),selected = 10),
+				          p("Note: Following heatmap plots the most variable genes in data set, this is not a statistical test.")
 				        ),
 				        conditionalPanel('input.DisplayMode == "Plots"',
 				          plotOutput("Global_Analysis_Plots")
