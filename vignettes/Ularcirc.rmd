@@ -93,7 +93,7 @@ knitr::include_graphics('AnnotatingTwoSzabo.PNG')
 
 Select the first entry in the table (it will highlight in blue). Next select ``Display_Gene_Transcripts`` from the left side tab which will dynamically generate a visualisation of Slc8a1 with both backsplice and canonical forward splice junctions (as shown in \@ref(fig:SLC8a1TwoSzabo)
 
-```{r SLC8A1TwoSzabo, out.width='100%', fig.cap = 'Screenshot of Slc8a1 back splice  and canonical splice junctions.',echo=FALSE}
+```{r SLC8a1TwoSzabo, out.width='100%', fig.cap = 'Screenshot of Slc8a1 back splice  and canonical splice junctions.',echo=FALSE}
 knitr::include_graphics('SLC8a1_TwoSzabo.PNG')
 ```
 
@@ -178,7 +178,7 @@ Ularcirc provides functionality to filter BSJ against pre-defined values for bot
 
 
 ## Step 1c: Loading new data sets
-Ularcirc requires output files that can be generated from the following programs: STAR aligner, circExplorer2, CIRI2, regtools. For full functionality at least one FSJ, one BSJ, and one gene count data set be loaded per sample. The STAR aligner produces FSJ, BSJ and gene count output files which have the following preset file extensions: SJ.out.tab (FSJ), Chimeric.out.junction (chimeric junctions), and ReadsPerGene.tab.out (gene counts). CircExplorer2 and CIRI2 output files are required to have the file extension ce2 and ciri repsectively. 
+Ularcirc requires output files that can be generated from the following programs: STAR aligner, circExplorer2, CIRI2, regtools. For full functionality at least one FSJ, one BSJ, and one gene count data set be loaded per sample. The STAR aligner produces FSJ, BSJ and gene count output files which have the following preset file extensions: SJ.out.tab (FSJ), Chimeric.out.junction (chimeric junctions), and ReadsPerGene.tab.out (gene counts). CircExplorer2 and CIRI2 output files are required to have the file extension ``ce`` and ``ciri`` repsectively. 
 
 It is very important that the prefx of input files for individual samples are comon (example is shown below). To upload files users must navigate to the Setup tab select ``upload new data`` and then select ``Browse`` under the heading ``Upload input data files``. Prior to file upload a number of genomic filtering configuration options are available. The default filters require that chimeric alignments exist on the same strand of the same chromosome and that the chimera junction occurs over a distance less than 100,000 nucleotides. These values can be adjusted via the interactive options displayed on this screen.  There are currently no filters implemented for canonical splice junctions and Ularcirc will utilise all information from input FSJ files. For STAR FSJ files Ularcirc only utilises the unique alignment counts. 
 
@@ -188,11 +188,11 @@ Multiple samples can be uploaded into Ularcirc but this can only be done in one 
 SRR12345678_e17.5_heart.Chimeric.out.junction 
 SRR12345678_e17.5_heart.SJ.out.tab
 SRR12345678_e17.5_heart.ReadsPerGene.tab.out
-SRR12345678_e17.5_heart.ce2
+SRR12345678_e17.5_heart.ce
 SRR87654321_P10_heart.Chimeric.out.junction   
 SRR87654321_P10_heart.SJ.out.tab
 SRR87654321_P10_heart.ReadsPerGene.tab.out
-SRR87654321_P10_heart.ce2
+SRR87654321_P10_heart.ce
 ```
 
 
