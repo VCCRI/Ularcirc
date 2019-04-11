@@ -1,17 +1,17 @@
 # Ularcirc
 An R package that provides analysis and visualisation of canonical and backsplice junctions.
-Requires output provided by the STAR aligner
+Takes output provided by the STAR aligner as well as CIRI2 and circExplorer2 output and enables circRNA downstream analysis.
 
 Author and maintainer: David Humphreys (d.humphreys  at      victorchang  dot   edu   dot    au)
 
 Pre-print for [Ularcirc now on bioarchives](https://www.biorxiv.org/content/early/2018/05/15/318436). 
 
 # Installation
-You can install Ularcirc using the 'devtools' package. Note: Towards the end of 2018 Ularcirc will also be part of bioconductor. 
+You can install Ularcirc using the 'devtools' package.  
 
     > install.packages("devtools")
     > library(devtools)
-    > devtools::install_github("VCCRI/Ularcirc")
+    > devtools::install_github("VCCRI/Ularcirc", build = TRUE, build_opts = c("--no-resave-data", "--no-manual"))
 
 Ularcirc can annotate circRNA with overlapping gene information. This is obtained from available 
 bioconductor databases. Use the following command to identify what databases to download:

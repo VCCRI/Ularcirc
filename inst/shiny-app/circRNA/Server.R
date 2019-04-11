@@ -702,6 +702,8 @@ LoadJunctionData <- function(filename, ChromFilter, StrandFilter, Genomic_Distan
 	                                #multimappers=1,overhang=1, DataSet=1)
 	ReadsPerGene_Data <- data.table(geneName="blank",unstranded=1,
 	                                Fstrand=1,Rstrand=1, DataSet=1)
+	ReadsPerGeneIDs <- {}
+
 	DataType <- c("Unknown")
 
 	# Identify which files are chimeric and which files are linear.
@@ -861,8 +863,16 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 	    data_set <- fread(filename$datapath[ReadsPerGene_Idx[1]], sep="\t")
 	    if (ncol(data_set) != 4)
 	    { next } # Data file corrupt or incorrect
+	    else # Good data set
+	    {  # Remove gene name column and store separately. Ensure it is same as first upload
+	      ReadsPerGeneIDs <- data_set[,1]
+	      ## Currently assuming every upladed data set is built on same gene list.
+	      ## Perhaps should do a check here?
 
-	    IDs_idx <- c(IDs_idx, IDs[i])
+	      data_set[,1] <- 1:length(ReadsPerGeneIDs)
+	    }
+
+	    IDs_idx <- c(IDs_idx, IDs[i])  # Records a successful import by storing sample name
 	    setnames(data_set,1:4, c("geneName","unstranded","Fstrand","Rstrand"))
 	    data_set$DataSet <- i
 	    if (! is.null(ReadsPerGene_Data))
@@ -943,7 +953,8 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 	            DataType = DataType,                             # "Backsplice"  or "Canonical" so far  <= This is now redundant !!!
 	            SampleIDs = IDs,
 	            Canonical_AllData = Canonical_AllData,
-	            ReadsPerGene_Data = ReadsPerGene_Data,  # STAR output
+	            ReadsPerGene_Data = ReadsPerGene_Data,  # STAR gene count output
+	            ReadsPerGeneIDs = ReadsPerGeneIDs,      # Corresponding gene names from STAR gene count output
 	            ext_BSJ_output = ext_BSJ_output,     # eg circExplorer2, CIRI2 output
 	            ext_FSJ_output = ext_FSJ_output      # eg regtools output
 	))
@@ -1577,6 +1588,8 @@ withProgress(message="Annotating with FSJ coverage", value=0, {
 
   for( i in 1: length(AllGenes))
   { incProgress(1/length(AllGenes), detail = paste("Updating ",i, " of ", length(AllGenes) ))
+
+
     GeneName <- AllGenes[i]
     if ((GeneName == "Novel") || (GeneName == "Unknown"))
       next
@@ -1624,7 +1637,7 @@ withProgress(message="Annotating with FSJ coverage", value=0, {
       else # Have group data
       {
         toDisplay_df <- as.data.frame(toDisplay_df)
-        for (j in 1:(Num_Columns-3))
+        for (j in 1:(Num_Columns-4))
         {
            if (is.null(toDisplay_df[DT_idx,Num_Columns+j]))
            {   toDisplay_df[,Num_Columns+j] <- 0  }
@@ -2975,9 +2988,12 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
  	  {
  	    toDisplay <- inputData$RAW
  	  }
-
  	  GeneName <- as.character(toDisplay$Gene)
- 	  col_data_names <- setdiff(colnames(toDisplay), c("BSjuncName","strandDonor", "Gene") )
+ 	  RAD_col_ID <- grep(pattern = "_II_III",x = colnames(toDisplay), value = TRUE)
+ 	  FSJ_col_ID <- grep(pattern = "_FSJ",x = colnames(toDisplay), value = TRUE)
+
+ 	  col_data_names <- setdiff(colnames(toDisplay),
+ 	                      c("BSjuncName","strandDonor", "Gene", "juncType", RAD_col_ID, FSJ_col_ID) )
  	  toDisplay <- as.matrix(toDisplay)[,col_data_names]
 
  	  # Have tried several things to convert "list" to a numeric data frame. Below is a list of attempts
