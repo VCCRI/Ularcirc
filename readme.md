@@ -4,7 +4,7 @@ Takes output provided by the STAR aligner as well as CIRI2 and circExplorer2 out
 
 Author and maintainer: David Humphreys (d.humphreys  at      victorchang  dot   edu   dot    au)
 
-Pre-print for [Ularcirc now on bioarchives](https://www.biorxiv.org/content/early/2018/05/15/318436). 
+Pre-print for [Ularcirc on bioarchives](https://www.biorxiv.org/content/early/2018/05/15/318436). 
 
 # Installation
 You can install Ularcirc using the 'devtools' package.  
@@ -39,7 +39,7 @@ To start Ularcirc shiny app
 # Documentation
 Please refer to pdf manual under the docs folder. This document is currently being built so please check back for regular updates.
 
-Please click [this link to view a 12 minute screen cast](https://www.youtube.com/watch?v=BQkCurUF2XQ) that walks through a simple circRNA analysis using Ularcirc.
+Please click [this link to view a ~5 minute screen cast](https://youtu.be/96rcxlh_aLA) that walks through a simple circRNA analysis using Ularcirc.
 
 
 ##  Features
