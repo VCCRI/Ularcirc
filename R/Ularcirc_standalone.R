@@ -113,7 +113,8 @@ BSJ_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
     # Short list exons
 #    BSJ_donor <- as.numeric(min(BSjuncDetails[[1]][c(2,4)]))
 #    BSJ_acceptor <- as.numeric(max(BSjuncDetails[[1]][c(2,4)]))
-    possible_exons <- b[start >= BSJ_donor & stop <=  BSJ_acceptor,]
+    idx <- b$start >= BSJ_donor & b$stop <= BSJ_acceptor
+    possible_exons <- b[idx,]
 
     # select candidates. In some situations coordinates may be entered in 0 or 1 base.
 
