@@ -7,8 +7,11 @@ circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGG
 ####
 #' BSJ_to_circRNA_sequence
 #'
-#' Takes a BSJ coordinates and generates a predicted circular RNA sequence
+#' Takes one BSJ coordinate and generates a predicted circular RNA sequence.
 #' @param BSJ : BSJ coordinate
+#' @param geneID : The gene ID that the BSJ aligns to. Not essential as this can
+#' be identified from the BSJ coordinate, however there is a dramatic speed improvemnt
+#' if this can be passed to the function.
 #' @param genome : Is the length f the library fragment
 #' @param TxDb : The sequence read length
 #' @return Returns a DNAstring object.
@@ -28,9 +31,34 @@ circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGG
 #' @export
 BSJ_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLibrary)
 {
-  # Following code is taken from Annotate_BS_Junc in server.R
   lookupID <- {}
-  BSjuncDetails <- strsplit(BSJ, split = "_")
+  BSJ_donor <- {}
+  BSJ_acceptor <- {}
+
+  # Need to distinguish the following formats
+  # chr10:100923974-100926020:+
+  # chr11_33286412_chr11_33287512
+
+  if (length(gregexpr("_",BSJ)[[1]]) == 3) # Ularcirc format
+  {
+    BSjuncDetails <- strsplit(BSJ, split = "_")
+    BSJ_donor <- as.numeric(min(BSjuncDetails[[1]][c(2,4)]))
+    BSJ_acceptor <- as.numeric(max(BSjuncDetails[[1]][c(2,4)]))
+  }
+  else if (length(gregexpr(":",BSJ)[[1]]) == 2) # generic format
+  {
+    BSjuncDetails <- strsplit(BSJ, split = ":")
+    coordinates <- unlist(strsplit(BSjuncDetails[[1]][2], split="-"))
+    BSJ_donor <- as.numeric(min(coordinates))
+    BSJ_acceptor <- as.numeric(max(coordinates))
+  }
+  else
+  {
+    warning("BSJ not in the correct format. Did not detect separating characters.")
+    return(NULL)
+  }
+
+
 
   if (is.null(geneID))  # Identify potential gene coordinate
   {
@@ -83,8 +111,8 @@ BSJ_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
     b <- as.data.table(b)
 
     # Short list exons
-    BSJ_donor <- as.numeric(min(BSjuncDetails[[1]][c(2,4)]))
-    BSJ_acceptor <- as.numeric(max(BSjuncDetails[[1]][c(2,4)]))
+#    BSJ_donor <- as.numeric(min(BSjuncDetails[[1]][c(2,4)]))
+#    BSJ_acceptor <- as.numeric(max(BSjuncDetails[[1]][c(2,4)]))
     possible_exons <- b[start >= BSJ_donor & stop <=  BSJ_acceptor,]
 
     # select candidates. In some situations coordinates may be entered in 0 or 1 base.
