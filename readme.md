@@ -37,9 +37,13 @@ To start Ularcirc shiny app
 
 	
 # Documentation
-Please refer to pdf manual under the docs folder. This document is currently being built so please check back for regular updates.
+Please refer to vignette within R. Additionally  there are a number of screen casts that highlights how to get going with Ularcirc.
+
+##Screen casts
 
 Please click [this link to view a ~5 minute screen cast](https://youtu.be/96rcxlh_aLA) that walks through a simple circRNA analysis using Ularcirc.
+
+The following link demonstrates how to [upload and recover sequence information from BSJ and FSJ](https://youtu.be/txWAI-LJCVw)
 
 
 ##  Features
