@@ -52,19 +52,22 @@ The following demonstrates how to download Ularcirc, install the required databa
 STEP1: Install Ularcirc package
 
 ```
-library(BiocInstaller) 
-# use source("http://www.bioconductor.org/biocLite.R") if not available
-biocLite("Ularcirc")
+if (!requireNamespace("BiocManager", quietly=TRUE))
+        install.packages("BiocManager")
+BiocManager::install("Ularcirc")
 ```
 
 STEP2: Load annotation databases: Ularcirc comes with one existing data set that has been aligned to hg38. While annotation is not required to identify circRNAs we recomment to download the respective human annotation databases as follows:
 
 ```
-library(BiocInstaller) 
-# use source("http://www.bioconductor.org/biocLite.R") if not available
-biocLite("BSgenome.Hsapiens.UCSC.hg38")         # Genome; enables sequence analysis
-biocLite("TxDb.Hsapiens.UCSC.hg38.knownGene")   # Transcript database
-biocLite("org.Hs.eg.db")                        # Annotation database
+if (!requireNamespace("BiocManager", quietly=TRUE))
+        install.packages("BiocManager")
+
+\dontrun { 
+  BiocManager::install(c("BSgenome.Hsapiens.UCSC.hg19",         # Genome; enables sequence analysis
+                      "TxDb.Hsapiens.UCSC.hg19.knownGene",    # Transcript database
+                      "org.Hs.eg.db"))                        # Annotation database
+      }
 ```
 
 STEP3: Start Ularcirc, load annotation database, load project data  
@@ -205,11 +208,11 @@ After files are uploaded the Project filename can be entered and saved (refer St
 
 New data sets or existing project data sets can be saved or loaded through the Projects tab. Data sets that are loaded through Ularcirc can be saved as a project file which can then be reloaded at a later date. Projects should be saved in a common folder/directory that exists on the local file system. This folder/directory is defined at the top of the  main page of the projects tab. This directory should NOT be set to the R Ularcirc library  directory as any future upgrades will overwrite pre-existing files. 
 
-Different RNA-Seq library prep kits are capable of capturing the same or opposing strand of RNA. Some kits are do not capture the strand of a RNA transcript. The top most panel on the side bar provides the opportunity to record this information.
+There are large number of options for RNA-Seq library prep kits. Users should be aware if the library prep kit is stranded or unstranded. Stranded RNA-Seq kits either reproduce cDNA in either the same or opposing strand to that of the RNA. For example the Illumina TruSeq stranded RNA-seq libray prep kit produce cDNA to the opposite strand to that of the RNA. Ularcirc need to know this information to correctly built tables and assemble sequences. Users provide this information to Ularcirc in the ``Project tab`` under the heading ``library prep`` on the left side bar. 
 
-All saved projects that are present in the working directory will be listed in the pulldown menu located under the blue "Load" title on sidebar. Note that any new data sets that may have been loaded in the current Ularcirc session will not be visable until Ularcirc is restarted. To load selecting the project name and press load. Data is loaded when sample names are listed on the main tab.
+All saved projects that are present in the working directory will be listed in the pulldown menu located under the "Load" title on sidebar. Note that any new data sets that may have been loaded in the current Ularcirc session will not be visable until Ularcirc is restarted. To load selecting the project name and press load. Data is loaded when sample names are listed on the main tab.
 
-To save a project a unique project name must be entered into the sidebar under entry "Name of project" and then pressing the save button. Ularcirc will not overwrite an existing project file and will warn users if the entered name is not unique.
+To save a project a unique project name must be entered into the sidebar under entry``Name of project`` and then pressing the save button. Ularcirc will not overwrite an existing project file and will warn users if the entered name is not unique.
 
 ## Step 2b: Grouping samples
 
@@ -258,7 +261,8 @@ For backsplice junctions Ularcirc provides further sequence analysis in the form
 knitr::include_graphics('BackspliceJunctionORF.PNG')
 ```
 
-For microRNA binding site analysis Ularcirc can analyse the predicted circRNA sequence. By default Ularcirc searches for complementary 7nt miRNA seed sequence that exist within the circRNA. There are options to increase or descrease the definition of the miRNA seed in a pull down menu. Ularcirc by default will only display miRNA bindings sites that are found at least two times. This threshold can also be modified via a pulldown menu as shown in the figure below. 
+For microRNA binding site analysis Ularcirc can analyse the predicted circRNA sequence. By default Ularcirc searches for complementary 
+7nt miRNA seed sequence that exist within the circRNA. There are options to increase or descrease the definition of the miRNA seed in a pull down menu. Ularcirc by default will only display miRNA bindings sites that are found at least two times. This threshold can also be modified via a pulldown menu as shown in the figure below . 
 
 ```{r HG38Slc8a1_miRNA, out.width='65%', fig.cap = 'Ularcirc Junction view tab showing potential miRNA binding sites that reside within Slc8a1',echo=FALSE}
 knitr::include_graphics('BackspliceJunction_miRNA.PNG')

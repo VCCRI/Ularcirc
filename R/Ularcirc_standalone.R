@@ -5,31 +5,38 @@ circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGG
 
 
 ####
-#' BSJ_to_circRNA_sequence
+#' bsj_to_circRNA_sequence
 #'
 #' Takes one BSJ coordinate and generates a predicted circular RNA sequence.
-#' @param BSJ : BSJ coordinate
+#' @param BSJ : BSJ coordinate in the format of chr_coordinate_chr_coorindate OR chr:coordinate-coorindate:strand.
 #' @param geneID : The gene ID that the BSJ aligns to. Not essential as this can
-#' be identified from the BSJ coordinate, however there is a dramatic speed improvemnt
-#' if this can be passed to the function.
+#' be identified from the BSJ coordinate, however time performance of function improved
+#' if this information can be provided.
 #' @param genome : Is the length f the library fragment
 #' @param TxDb : The sequence read length
 #' @return Returns a DNAstring object.
 #' @examples
 #'
 #' library('Ularcirc')
+#' library('BSgenome.Hsapiens.UCSC.hg38')
+#' library('TxDb.Hsapiens.UCSC.hg38.knownGene')
 #' TxDb <- TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene
 #' genome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
-#' BSJ  <- 'chr2_40430305_chr2_40428472'   # chr2_40430302_chr2_40428472
-#' annotationLibrary <- org.Hs.eg.db
-#' BSJ_to_circRNA_sequence(BSJ, "SLC8A1", genome,TxDb, annotationLibrary)
-#' # chr11_33286412_chr11_33287512
+#' annotationLibrary <- org.Hs.eg.db::org.Hs.eg.db
 #'
-#' TxDb_hg19 <- TxDb.Hsapiens.UCSC.hg19.knownGene::TxDb.Hsapiens.UCSC.hg19.knownGene
-#' genome_hg19 <- BSgenome.Hsapiens.UCSC.hg19::BSgenome.Hsapiens.UCSC.hg19
+#' # Define BSJ. Following two formats are accepted
+#' BSJ <- 'chr2:40430305-40428472:-'       # SLC8A1
+#' BSJ  <- 'chr2_40430305_chr2_40428472'   # SLC8A1
 #'
+#' circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, "SLC8A1", genome,TxDb, annotationLibrary)
+#'
+#' # You can also retrieve sequence without passing gene annotation - but this is slower
+#' # circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, NULL, genome,TxDb, annotationLibrary)
+#' @import GenomicRanges
+#' @import GenomicAlignments
+#' @import S4Vectors
 #' @export
-BSJ_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLibrary)
+bsj_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLibrary)
 {
   lookupID <- {}
   BSJ_donor <- {}
@@ -62,41 +69,41 @@ BSJ_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
 
   if (is.null(geneID))  # Identify potential gene coordinate
   {
-    g_GR <- genes(TxDb)
-
-    bs_junc_gr <- GRanges(seqnames=BSjuncDetails[[1]][1], ranges = as.numeric(min(BSjuncDetails[[1]][c(2,4)]),min(BSjuncDetails[[1]][c(2,4)])),strand = strand)
-    t_start <- findOverlaps(invertStrand(bs_junc_gr),g_GR, type=c("within"))
-    bs_junc_gr <- GRanges(seqnames=BSjuncDetails[[1]][1], ranges = as.numeric(max(BSjuncDetails[[1]][c(2,4)]),max(BSjuncDetails[[1]][c(2,4)])),strand = strand)
-    t_end <- findOverlaps(invertStrand(bs_junc_gr),g_GR, type=c("within"))
+    g_GR <- GenomicFeatures::genes(TxDb)
+    strand <- "*"
+    bs_junc_gr <- GenomicRanges::GRanges(seqnames=BSjuncDetails[[1]][1], ranges = as.numeric(min(BSjuncDetails[[1]][c(2,4)]),min(BSjuncDetails[[1]][c(2,4)])),strand = strand)
+    t_start <- GenomicAlignments::findOverlaps(invertStrand(bs_junc_gr),g_GR, type=c("within"))
+    bs_junc_gr <- GenomicRanges::GRanges(seqnames=BSjuncDetails[[1]][1], ranges = as.numeric(max(BSjuncDetails[[1]][c(2,4)]),max(BSjuncDetails[[1]][c(2,4)])),strand = strand)
+    t_end <- GenomicAlignments::findOverlaps(invertStrand(bs_junc_gr),g_GR, type=c("within"))
 
     entrezID <- c("Novel")
     #	  browser()
     if ((length(t_start) > 0) && (length(t_end) > 0))
-    {	entrezID_start <- g_GR[subjectHits(t_start)]$gene_id
-    entrezID_end <- g_GR[subjectHits(t_end)]$gene_id
-    entrezID <- intersect(entrezID_start, entrezID_end)
-    entrezID <- try(select(GeneList$Annotation_Library, keys = entrezID, columns=c("SYMBOL"),keytype="ENTREZID")[,'SYMBOL'],silent=TRUE) # Convert to Symbol
+    {	entrezID_start <- g_GR[S4Vectors::subjectHits(t_start)]$gene_id
+      entrezID_end <- g_GR[S4Vectors::subjectHits(t_end)]$gene_id
+      entrezID <- intersect(entrezID_start, entrezID_end)
+      lookupID <- entrezID
 
-    if(length(grep(pattern = "Error in ", x = entrezID)))  # This is start of error message when lookup is not linked
-    {   entrezID <- intersect(entrezID_start, entrezID_end)
-    entrezID <- try(select(GeneList$Annotation_Library, keys = entrezID, columns=c("SYMBOL"),keytype="ENSEMBL"),silent=TRUE)
-    entrezID <- entrezID$SYMBOL
-    if(length(grep(pattern = "Error in ", x = entrezID)))
-    {    entrezID <- c("Unknown") }
-    }
-    }
-    DataSet$Gene[i] <- paste(unique(entrezID),collapse=",")
+#      entrezID <- try(AnnotationDbi::select(annotationLibrary, keys = entrezID, columns=c("SYMBOL"),keytype="ENTREZID")[,'SYMBOL'],silent=TRUE) # Convert to Symbol
 
-    ################## following code taken from Prepare_Gene_Object
-    a <- try(select(GeneList$Annotation_Library, keys = GeneName, columns=c("ENTREZID", "SYMBOL", "ENSEMBL"),keytype="SYMBOL"),silent=TRUE)
-    lookupID <- a$ENTREZID
+#      if(length(grep(pattern = "Error in ", x = entrezID)))  # This is start of error message when lookup is not linked
+#      {   entrezID <- intersect(entrezID_start, entrezID_end)
+#          entrezID <- try(select(GeneList$Annotation_Library, keys = entrezID, columns=c("SYMBOL"),keytype="ENSEMBL"),silent=TRUE)
+#          entrezID <- entrezID$SYMBOL
+#          if(length(grep(pattern = "Error in ", x = entrezID)))
+#          {    entrezID <- c("Unknown") }
+#      }
+    }
+#    geneID <- paste(unique(entrezID),collapse=",")
+
   }
 
   if (! is.null(geneID))  # Gene name was provided. Trust this and obtain entrezID
   {
-    a <- try(select(annotationLibrary, keys = geneID, columns=c("ENTREZID", "SYMBOL", "ENSEMBL"),keytype="SYMBOL"),silent=TRUE)
+    a <- try(AnnotationDbi::select(annotationLibrary, keys = geneID, columns=c("ENTREZID", "SYMBOL", "ENSEMBL"),keytype="SYMBOL"),silent=TRUE)
     if(length(grep(pattern = "Error", x = a)))
-    {   # We cannot continue
+    {   # cannot continue
+      warning(paste(a,"Error obtaining annotation information.","\n"))
       return(-1)
     }
     lookupID <- a$ENTREZID   # Default lookup
@@ -105,10 +112,16 @@ BSJ_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
   if (! is.null(lookupID))
   {
     # Create exon table
-    b <- select(TxDb, keys = lookupID, columns=c('GENEID', 'TXCHROM', 'EXONSTART',  'EXONEND','TXID', 'EXONSTRAND'),keytype="GENEID")
+    b <- try(AnnotationDbi::select(TxDb, keys = lookupID, columns=c('GENEID', 'TXCHROM', 'EXONSTART',  'EXONEND','TXID', 'EXONSTRAND'),keytype="GENEID"),silent=TRUE)
+    if(length(grep(pattern = "Error", x = b)))
+    {   # cannot continue
+      warning(paste(b,"Error obtaining annotation information.","\n"))
+      return(-1)
+    }
+
     b <- b[,c("TXCHROM","EXONSTART","EXONEND","TXID","EXONSTRAND")]
     names(b) <- c('chrom', 'start', 'stop', 'gene','strand')
-    b <- as.data.table(b)
+    b <- data.table::as.data.table(b)
 
     # Short list exons
 #    BSJ_donor <- as.numeric(min(BSjuncDetails[[1]][c(2,4)]))
@@ -146,7 +159,7 @@ BSJ_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
     circRNA_Sequence <- ''
     FSJs <- c(1)# This will contain start positions for ALL Forward splice junctions
     for (i in 1:nrow(Exons_of_Interest))   # Need to stitch together multiple exons
-    { tmp <- as.character(getSeq(genome,Exons_of_Interest$chrom[i],
+    { tmp <- as.character(Biostrings::getSeq(genome,Exons_of_Interest$chrom[i],
                                  start=Exons_of_Interest$start[i],
                                  end=Exons_of_Interest$stop[i],
                                  strand = Exons_of_Interest$strand[i])  )
@@ -154,10 +167,11 @@ BSJ_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
     circRNA_Sequence <- paste(circRNA_Sequence,tmp,sep="",collapse = "")
     }
 
-    circRNA_Sequence <- DNAString(circRNA_Sequence)
+    circRNA_Sequence <- Biostrings::DNAString(circRNA_Sequence)
     return(circRNA_Sequence)
   }
 
+  warning("Cannot find or match gene ID")
   return(NULL)
 
 }
@@ -165,27 +179,40 @@ BSJ_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
 
 
 ####
-#' BSJ_Fastq_Generate
+#' bsj_fastq_generate
 #'
-#' Takes a circRNA predicted sequence and generates synthetic sequence reads that
+#' Takes a circRNA predicted sequence and generates synthetic short sequence reads
 #' @param circRNA_Sequence : Linear sequence of a circRNA. i.e. the backspice junction
 #'               is the first and last base of this sequence
-#' @param fragmentLength : Is the length f the library fragment
+#' @param fragmentLength : Is the length the library fragment
 #' @param readLength : The sequence read length
-#' @return Returns a list DNAstring sets.
+#' @param variations : Number of sequences returned for each read type. Note each
+#' sequence variation will start at a unique location (where possible)
+#' @param headID : Character identifier that will be incorporated into sequence header
+#' @return Returns a list of two DNAstring sets labelled "read1" and "read2" which correspond
+#' to forward and reverse read pairs.
+#'
 #' @examples
 #'
 #' library('Ularcirc')
 #'
 #'
 #' # Obtain a circRNA sequence
-#' circRNA_Sequence <- circRNA_seq_example
-#' fastqReads <- BSJ_Fastq_Generate(circRNA_Sequence, fragmentLength=300, readLength=100, variations = 4, headerID='')
-#' writeXStringSet( fastqReads$Read_One,"circRNA_Sample_R1.fastq.gz",compress = TRUE, format="fastq")
-#' writeXStringSet( fastqReads$Read_Two,"circRNA_Sample_R2.fastq.gz",compress = TRUE, format="fastq")
+#' circRNA_Sequence <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGGAAGAAGCAAAAGAAAAATTAAGAAAGTCAAGAGAGGAAATTCGAGCAGAAATTCAGACAGAGAAAAATAAGGTAGTCCAAGAAATGAAGATAAAAGAGAACAAGCCACTGCCACCAGTCCCTATTCCCAACCTTGTAGGAATACGTGGTGGAGACCCAGAAGATAATGACATAAGAGAGAAAAGGGAAAAAATTAAAGAGATGATGAAACATGCTTGGGATAACTATAGGACATATGGGTGGGGACATAATGAACTCAGACCTATTGCAAGGAAAGGACACTCCCCTAACATATTTGGAAGTTCACAAATGGGTGCTACCATAGTAGATGCTTTGGATACCCTTTATATCATGGGACTTCATGATGAATTCCTAGATGGGCAAAGATGGATTGAAGACAACCTTGATTTCAGTGTGAATTCAGAGGTGTCTGTGTTTGAAGTCAACATTCGATTTATTGGAGGCCTACTTGCAGCATATTACCTATCAGGAGAGGAG"
+#' fastqReads <- bsj_fastq_generate(circRNA_Sequence, fragmentLength=300, readLength=100,
+#'                variations = 4,   # Four type I , II, III, and IV reads generated
+#'                headerID='circRNA_example')  # Identifier incorporated in name of each sequence
+#' # The following will indicate 12 sequences are present in each list entry
+#' length(fastqReads$read1)
+#' length(fastqReads$read2)
+#'
+#' # Can create fastq file as follows
+#' Biostrings::writeXStringSet( fastqReads$read1,"circRNA_Sample_R1.fastq.gz",compress = TRUE, format="fastq")
+#' Biostrings::writeXStringSet( fastqReads$read2,"circRNA_Sample_R2.fastq.gz",compress = TRUE, format="fastq")
+#' @import Biostrings
 #'
 #' @export
-BSJ_Fastq_Generate <- function(circRNA_Sequence, fragmentLength=300, readLength=100, variations = 4, headerID='')
+bsj_fastq_generate <- function(circRNA_Sequence, fragmentLength=300, readLength=100, variations = 4, headerID='')
 {
   if (variations < 1)
   { warning("Number of fragment variations must be 1 or more. Resetting to 1")
@@ -219,23 +246,23 @@ BSJ_Fastq_Generate <- function(circRNA_Sequence, fragmentLength=300, readLength=
   typeIV_offset  <- readLength + typeIV_gap_size - typeIV_offset_step_size
   common_label <- paste("_F",fragmentLength,"_R",readLength, sep="")
 
-  Read_One <- {};  Read_Two <- {};
+  read_one <- {};  read_two <- {};
   # Generate Type II reads
   start_pos <- circ_length - typeII_offset
   for (i in 1:variations)
-  { Read_One <- c(Read_One, substr(x = circRNA_Sequence, start = start_pos, stop = start_pos + readLength))
-  Read_Two <- c(Read_Two, substr(x = circRNA_Sequence, start = start_pos+fragmentLength-readLength, stop = start_pos + fragmentLength))
-  names(Read_One)[i] <- paste(headerID,"_typeII_",start_pos, common_label,sep="")
+  { read_one <- c(read_one, substr(x = circRNA_Sequence, start = start_pos, stop = start_pos + readLength))
+  read_two <- c(read_two, substr(x = circRNA_Sequence, start = start_pos+fragmentLength-readLength, stop = start_pos + fragmentLength))
+  names(read_one)[i] <- paste(headerID,"_typeII_",start_pos, common_label,sep="")
   start_pos <- start_pos + typeII_III_offset_step_size
   }
 
   # Generate Type III reads
   start_pos <- circ_length - typeIII_offset
   for (i in 1:variations)
-  { Read_One <- c(Read_One, substr(x = circRNA_Sequence, start = start_pos, stop = start_pos + readLength))
-  Read_Two <- c(Read_Two, substr(x = circRNA_Sequence, start = start_pos+fragmentLength-readLength, stop = start_pos + fragmentLength))
-  names(Read_One)[length(Read_One)] <- paste(headerID,"_typeIII_",start_pos,common_label,sep="")
-  start_pos <- start_pos + typeII_III_offset_step_size
+  { read_one <- c(read_one, substr(x = circRNA_Sequence, start = start_pos, stop = start_pos + readLength))
+    read_two <- c(read_two, substr(x = circRNA_Sequence, start = start_pos+fragmentLength-readLength, stop = start_pos + fragmentLength))
+    names(read_one)[length(read_one)] <- paste(headerID,"_typeIII_",start_pos,common_label,sep="")
+    start_pos <- start_pos + typeII_III_offset_step_size
   }
 
 
@@ -251,17 +278,17 @@ BSJ_Fastq_Generate <- function(circRNA_Sequence, fragmentLength=300, readLength=
 
     start_pos <- circ_length - typeIV_offset
     for (i in 1:variations)
-    { Read_One <- c(Read_One, substr(x = circRNA_Sequence, start = start_pos, stop = start_pos + readLength))
-    Read_Two <- c(Read_Two, substr(x = circRNA_Sequence, start = start_pos+fragmentLength-readLength, stop = start_pos + fragmentLength))
-    names(Read_One)[length(Read_One)] <- paste(headerID,"_typeIV_",start_pos,common_label,sep="")
+    { read_one <- c(read_one, substr(x = circRNA_Sequence, start = start_pos, stop = start_pos + readLength))
+    read_two <- c(read_two, substr(x = circRNA_Sequence, start = start_pos+fragmentLength-readLength, stop = start_pos + fragmentLength))
+    names(read_one)[length(read_one)] <- paste(headerID,"_typeIV_",start_pos,common_label,sep="")
     start_pos <- start_pos + typeIV_offset_step_size
     }
   }
 
-  names(Read_Two) <- names(Read_One)
-  Read_One <- Biostrings::DNAStringSet(x=Read_One)
-  Read_Two <- Biostrings::reverseComplement(Biostrings::DNAStringSet(x=Read_Two))
-  return(list(readOne=Read_One, readTwo=Read_Two))
+  names(read_two) <- names(read_one)
+  read_one <- Biostrings::DNAStringSet(x=read_one)
+  read_two <- Biostrings::reverseComplement(Biostrings::DNAStringSet(x=read_two))
+  return(list(read1 =read_one, read2 = read_two))
 }
 
 
