@@ -32,9 +32,7 @@ circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGG
 #'
 #' # You can also retrieve sequence without passing gene annotation - but this is slower
 #' # circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, NULL, genome,TxDb, annotationLibrary)
-#' @import GenomicRanges
-#' @import GenomicAlignments
-#' @import S4Vectors
+#'
 #' @export
 bsj_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLibrary)
 {
