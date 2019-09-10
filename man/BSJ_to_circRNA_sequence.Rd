@@ -17,6 +17,8 @@ if this information can be provided.}
 \item{genome}{: Is the length f the library fragment}
 
 \item{TxDb}{: The sequence read length}
+
+\item{annotationLibrary}{: annotation database. See details for example.}
 }
 \value{
 Returns a DNAstring object.
@@ -41,5 +43,6 @@ circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, "SLC8A1", genome,TxDb, annotati
 
 # You can also retrieve sequence without passing gene annotation - but this is slower
 # circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, NULL, genome,TxDb, annotationLibrary)
+
 
 }
