@@ -109,7 +109,7 @@ shinyUI(
 				    uiOutput("TwoGroupCompareChoices"),             # This displays a selectizeInput menu for the possible group comparison combinations
 
 				    conditionalPanel('input.BSJ_data_source =="STAR"',
-				      checkboxInput('Percent_of_Parent', 'Display % parent transcript:',FALSE),
+				      checkboxInput('Annotate_FSJ_coverage', 'Annotate with FSJ coverage:',FALSE),
 				      checkboxInput('Annotate_with_GeneName', "Annotate with parental gene:",TRUE),
 				      checkboxInput('DisplayFilterOptions', "Display filter options:",FALSE)
 				    ),
@@ -133,6 +133,7 @@ shinyUI(
 				            selectizeInput("Global_Analysis_Plots_Options",label="Please select plot",
 				                  choices = c("PCA","Heatmap","Unique Number of circRNAs","Genes producing circRNAs",
 				                                  "Cummulative distribution"),
+				                                  # "circRNA size distribution"),
 				                                    selected=c("Unique Number of circRNAs"))
 				    ),
 		        br()
@@ -156,12 +157,12 @@ shinyUI(
       ), #conditionalPanel
 
 		conditionalPanel('input.PanelSelect === "Junction_View" && output.fileUploaded == true',
-		    selectizeInput("Junction_View_Mode", "Select junction type to view",choices = c("Backsplice","Canonical"), selected=c("Backsplice")),
+		    selectizeInput("Junction_View_Mode", "Select junction type to view",choices = c("Backsplice","Canonical","Transcript"), selected=c("Backsplice")),
 		    br(),
     		conditionalPanel('input.Junction_View_Mode == "Backsplice"',
 
     		    radioButtons('circRNA_Sequence_Analysis', 'Select analysis to perform',
-    		                 choices = c("Display backsplice junction sequence","Open reading frame analysis","miRNA binding site analysis"),
+    		                 choices = c("Display backsplice junction sequence","Open reading frame analysis","miRNA binding site analysis","kmer analysis"),
     		                 selected=c("Display backsplice junction sequence")),
 
       		    #			  h5('Analyze flanking intron button'),
@@ -177,6 +178,13 @@ shinyUI(
   	  	conditionalPanel('input.Junction_View_Mode == "Canonical"',
 #		        h4('Display local gene map'),
 		        br()),
+        conditionalPanel('input.Junction_View_Mode == "Transcript"',
+                 #		        h4('Display local gene map'),
+                 numericInput("Max_ORF_Length", "Max ORF length to consider: ", value=50, min = 1, max = 10000, step = 50),
+                # numericInput("ORFs_to_display", "Max Number of ORF to display: ", value=1, min = 1, max = 10, step = 1),
+                 selectInput("ORFs_to_display", "Max Number of ORF to display: ", choices=c("1","All"), selected="1"),
+                 br()),
+
 		      br()
 
 			)
@@ -292,7 +300,7 @@ shinyUI(
 					      h4('Transcript Table'),
 					      downloadButton('download_Transcript_Table','Download Transcript table' ),
 					      DT::dataTableOutput("TranscriptTable"),
-					      h5('Exon Table (populated once a row is selected from transcript table)'),
+					      h4('Exon Table (populated once a row is selected from transcript table)'),
 						    DT::dataTableOutput("ExonTable")
 		              ), # conditionalPanel(condition = "output.ShowExonTable == true ",
 
@@ -318,8 +326,8 @@ shinyUI(
 				      conditionalPanel('input.Annotation_Options == "Selected"',
     					  #h4('Junction table of selected data sets'),
     					  uiOutput("BSJ_count_table_header"),
+    					  downloadButton('downloadSelectJunctionCountTable','Download' ),
     					  conditionalPanel('input.BSJ_data_source =="STAR"',
-      					  downloadButton('downloadSelectJunctionCountTable','Download' ),
 	  				      DT::dataTableOutput("DisplayJunctionCountTable")
       					  ),
     					  conditionalPanel('input.BSJ_data_source !="STAR"',
@@ -387,14 +395,19 @@ shinyUI(
 
   					conditionalPanel(condition = 'input.circRNA_Sequence_Analysis == "Open reading frame analysis"',
   					    plotOutput("circRNA_Sequence_Analysis_ORF"),
-  					    DT::dataTableOutput("circRNA_Sequence_Analysis_Table"),
+  				#	    DT::dataTableOutput("circRNA_Sequence_Analysis_Table"),
   					    br()),
 
   					conditionalPanel(condition = 'input.circRNA_Sequence_Analysis == "miRNA binding site analysis"',
   					     uiOutput("miRNA_Options"),   # Seed length,  how many duplicates
   					     plotOutput("circRNA_Sequence_Analysis_miRNA"),
-  			#		     DT::dataTableOutput("circRNA_Sequence_Analysis_Table"),
+  					     DT::dataTableOutput("circRNA_Sequence_Analysis_Table"),
   					     br()),
+
+  				conditionalPanel(condition = 'input.circRNA_Sequence_Analysis == "kmer analysis"',
+                 uiOutput("kmer_Options"),   # kmer length,  how many to report
+                 DT::dataTableOutput("kmer_Analysis_Table"),
+                 br()),
 
   			conditionalPanel(condition = 'input.Display_FAD == true',
   			        plotOutput("Plot_RAD_Histogram"),
@@ -402,12 +415,15 @@ shinyUI(
   			#		uiOutput("circRNA_sequence_analysis"),
   					br(),
 
-					  br()),
+					  br()),  # conditionalPanel('input.Junction_View_Mode == "Backsplice"',
 	  		  br()),
 				  conditionalPanel('input.Junction_View_Mode == "Canonical"',
 				  #  uiOutput("DisplayCanonical_sequence"),br(),br(),         #renderUI
 				    verbatimTextOutput("DisplayCanonical_sequence"),br(),br(),   #renderText
 				    br()),
+				  conditionalPanel('input.Junction_View_Mode == "Transcript"',
+				    verbatimTextOutput("DisplayTranscript_sequence"),br()
+				    ),  # conditionalPanel('input.Junction_View_Mode == "Transcript"',
 				  br()
 				), 		# tabPanel 'Junction_View'
 # Blocking out Genome_View panel unless specifically selected
