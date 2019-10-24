@@ -4,7 +4,7 @@ Takes output provided by the STAR aligner as well as CIRI2 and circExplorer2 out
 
 Author and maintainer: David Humphreys (d.humphreys  at      victorchang  dot   edu   dot    au)
 
-Pre-print for [Ularcirc on bioarchives](https://www.biorxiv.org/content/early/2018/05/15/318436). 
+Ularcirc manuscript now available through [Nucleic Acids Research](https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gkz718/5552786). 
 
 # Installation
 You can install Ularcirc using the 'devtools' package.  
@@ -26,8 +26,9 @@ bioconductor databases. Use the following command to identify what databases to 
 17 "org.Mm.eg.db" "BSgenome.Mmusculus.UCSC.mm10" "TxDb.Mmusculus.UCSC.mm10.knownGene"
     
     > # Now lets download all of the above databases
-    > source("http://bioconductor.org/biocLite.R")   # Make sure R is looking at bioconductor repository
-    > biocLite(c(mmu_dbs))
+    > if (!requireNamespace("BiocManager", quietly = TRUE))
+    install.packages("BiocManager")   # Make sure R is looking at bioconductor repository
+    > BiocManager::install(c(mmu_dbs))
     
     
 To start Ularcirc shiny app

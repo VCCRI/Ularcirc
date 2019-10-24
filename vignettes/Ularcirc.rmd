@@ -39,7 +39,7 @@ Splicing is the removal of intronic sequences from a nascent pre-mRNA transcript
 
  The complexities of splicing  can be captured by RNA-Sequencing. Ularcirc takes  canonical forward slice junction (FSJ) and backsplice junction (BSJ) outputs generated from a variety of programs (STAR aligner, Regtools, circExplorer2, CIRI2) and provides a platform to integrate and analyse these datasets. Ularcirc provides visualisation and analysis tools for both forward canonical splice junctions (generated from mature mRNAs) and backsplice junctions (generated from circRNAs). Ularcirc dynamically generates visualisations, including the ability to a zoom to defined regions within a gene locus, and furthermore can extract the transcript sequence that spans specific exon junctions.
  
- In theory Ularcirc can be operated on computer setup that can run the R-programing language. All operations proceed in real time via a menu driven interactive analysis where data tables and visualization are generated dynamically. Ularcirc does not require significant computational resources and is currently implemented to operate on one CPU thread. The saved project data sets are small (typically in the low MB range) which enables easy sharing of data files. Introductory tutorials on how to use Ularcirc can be found on youtube. 
+ In theory Ularcirc can be operated on any hardware capable of running the R-programing language. All operations proceed in real time via a menu driven interactive analysis where data tables and visualization are generated dynamically. Ularcirc does not require significant computational resources and is currently implemented to operate on one CPU thread. The saved project data sets are small (typically in the low MB range) which enables easy sharing of data files. Introductory tutorials on how to use Ularcirc can be found on youtube. 
  
 Ularcirc is comprised of numerous interactive screens that comprise of a main and side panel. The main panel allows the selection of one of four tabs which are titled ``Setup``, ``Project``, ``Gene_View``, ``Genome_View``, ``Junction_View``. A different side panel exists for each main panel and display  specific options that help direct and assemble analysis. The main panel will display output relevant for each stage of circRNA analysis which this vignette describes in detail. Users should be aware that some analysis may take time to complete and floating status bars will notify of the progress.
 \end{abstract}
@@ -64,8 +64,8 @@ if (!requireNamespace("BiocManager", quietly=TRUE))
         install.packages("BiocManager")
 
 \dontrun { 
-  BiocManager::install(c("BSgenome.Hsapiens.UCSC.hg19",         # Genome; enables sequence analysis
-                      "TxDb.Hsapiens.UCSC.hg19.knownGene",    # Transcript database
+  BiocManager::install(c("BSgenome.Hsapiens.UCSC.hg38",         # Genome; enables sequence analysis
+                      "TxDb.Hsapiens.UCSC.hg38.knownGene",    # Transcript database
                       "org.Hs.eg.db"))                        # Annotation database
       }
 ```
@@ -83,29 +83,33 @@ knitr::include_graphics('HG38_Availale_Databases.PNG')
 ```
 
 
-The preloaded data set is called TwoSzabo which is loaded via the Project tab. Upon loading a popup window will appear displaying Associated meta data (for your reference). Click any where outside this window to close it.  Two data files should now appear under ``Selected Sample`` and ``Grouped analysis`` headings on main tab. 
+The preloaded data set is called TwoSzabo which is loaded via the Project tab. Upon loading a popup window will appear displaying Associated meta data (contains information for your reference). Click any where outside this window to close it.  Two data files should now appear under ``Selected Sample`` and ``Grouped analysis`` headings on main tab. 
 
 STEP4: 
 
-Navigate to ``Gene_View`` tab. In the options on the left hand panel select ``Annotate with parental gene`` as shown in figure \@ref(fig:AnnotatingTwoSzabo). Select ``build table`` and thereafter Ularcirc will build a table of annotated backspice junction counts. 
+Navigate to ``Gene_View`` tab. The TwoSzabo data set contains two sources of BSJ and one source of FSJ data. The BSJ data is generated from either the STAR Chimeric output junction file or from circExplorer2. There is a radio button under 
+``BSJ data source`` that allows you to select which data set you wish to analyse. Before analysing either BSJ you will need 
+to assemble collated BSJ data tables. To do this for circExplorer2 data ensure that the circExplorer2 radio button is selected and then press ``build table`` on left hand panel under ``Table Display Options``. For STAR derived BSJ data select the STAR radio button then select ``Annotate with parental gene`` as shown in figure \@ref(fig:AnnotatingTwoSzabo). For STAR BSJ data you need to select how many BSJ you wish to identify by selecting a number under ``Number of BS junctions to display`` (i.e the higher the number the more time it will take to assemble. Note that during this process  the most abundant BSJ first). Next select ``build table`` and thereafter Ularcirc will build a table of annotated backspice junction counts. 
 
 ```{r AnnotatingTwoSzabo, out.width='100%', fig.cap = 'Screenshot of Ularcirc Gene view tab.',echo=FALSE}
 knitr::include_graphics('AnnotatingTwoSzabo.PNG')
 ```
 
 
-Select the first entry in the table (it will highlight in blue). Next select ``Display_Gene_Transcripts`` from the left side tab which will dynamically generate a visualisation of Slc8a1 with both backsplice and canonical forward splice junctions (as shown in \@ref(fig:SLC8a1TwoSzabo)
+Select the first entry in the table (it will highlight in blue). Next select ``Display_Gene_Transcripts`` from the left side tab under heading ``DISPLAY MODE``. This will dynamically generate a visualisation of Slc8a1 with both backsplice and canonical forward splice junctions. 
 
 ```{r SLC8a1TwoSzabo, out.width='100%', fig.cap = 'Screenshot of Slc8a1 back splice  and canonical splice junctions.',echo=FALSE}
 knitr::include_graphics('SLC8a1_TwoSzabo.PNG')
 ```
 
 
+View [this 5 minute screencast](https://youtu.be/96rcxlh_aLA) which will cover the above points and more.  
+
 
 # Preparing input data sets
 
 ## Splice junction files
-Ularcirc requires canonical and chimeric splice junction output files generated from the STAR aligner which  MUST contain the default file extensions of SJ.out.tab and Chimeric.out.junction respectively. For detailed instructions on how to use the STAR aligner please visit url https: github alexdobin STAR . Note that the STAR aligner requires significant computational resources. There are publically available GALAXY resources to run STAR if you do not have access to other high performance computational resources https://usegalaxy.org}).
+Ularcirc requires canonical and chimeric splice junction output files generated from the STAR aligner which  MUST contain the default file extensions of SJ.out.tab and Chimeric.out.junction respectively. For detailed instructions on how to use the STAR aligner read the [STAR manual](https://www.google.com/url?sa=t&rct=j&q=&esrc=s&source=web&cd=3&cad=rja&uact=8&ved=2ahUKEwj0gvya2bTlAhXHZSsKHY2lD4EQjBAwAnoECAYQDw&url=https%3A%2F%2Fgithub.com%2Falexdobin%2FSTAR%2Fblob%2Fmaster%2Fdoc%2FSTARmanual.pdf&usg=AOvVaw1EesFwxpCNWl9z5B4XIFuf). Note that the STAR aligner requires significant computational resources. There are publically available GALAXY resources to run STAR if you do not have access to other high performance computational resources https://usegalaxy.org).
 To generate the required chimeric junction files the following two parameters must be supplied to the STAR aligner. The numeric value provided to each parameter describes features used to detect chimeric reads and therefore may need to be altered to improve sensitivity and accuracy.
 
 ```

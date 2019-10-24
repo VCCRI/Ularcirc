@@ -3,11 +3,12 @@ citEntry(entry="article",
          author = personList(
              as.person("David T Humphreys"),
              as.person("Nicolas Fossat"),
+			 as.person("Madeleine Demuth"),
              as.person("Patrick Tam"),
              as.person("Joshua Ho")),
-         journal = "bioRxiv",
-         year = "2018",
-         doi = "https://doi.org/10.1101/318436",
-         publisher = "Cold Spring Harbor Labs Journals",
-         url = "https://www.biorxiv.org/content/early/2018/05/15/318436",
-         textVersion = paste("David T Humphreys, Nicolas Fossat, Patrick Tam, Joshua Ho."))
+         journal = "Nucleic Acids Research",
+         year = "2019",
+         doi = "https://doi.org/10.1093/nar/gkz718",
+         publisher = "Oxford",
+         url = "https://academic.oup.com/nar/advance-article/doi/10.1093/nar/gkz718/5552786",
+         textVersion = paste("David T Humphreys, Nicolas Fossat, Madeleine Demuth, Patrick Tam, Joshua Ho."))

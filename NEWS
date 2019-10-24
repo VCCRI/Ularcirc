@@ -1,3 +1,13 @@
+Version 1.3.22
+-------------------------
+NEW FEATURES
+    o New stand alone functions that don't require shiny app : bsj_to_circRNA_sequence() and bsj_fastq_generate()
+	
+BUG FIXES
+    o BUG fix: All warnings in bioconductor now resolved
+	o BUG fix: Added dependencies to DESCRIPTION to allow automatic install
+
+
 Version 1.3.1
 -------------------------
 BUG FIXES
