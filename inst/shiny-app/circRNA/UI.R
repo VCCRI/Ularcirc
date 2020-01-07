@@ -132,8 +132,8 @@ shinyUI(
 				    conditionalPanel('input.DisplayMode == "Plots"',
 				            selectizeInput("Global_Analysis_Plots_Options",label="Please select plot",
 				                  choices = c("PCA","Heatmap","Unique Number of circRNAs","Genes producing circRNAs",
-				                                  "Cummulative distribution"),
-				                                  # "circRNA size distribution"),
+				                                  "Cummulative distribution",
+				                                   "circRNA size distribution"),
 				                                    selected=c("Unique Number of circRNAs"))
 				    ),
 		        br()

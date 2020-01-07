@@ -1,4 +1,4 @@
-
+## Could make a function that returns a couple of circRNA sequences? Could be a resource
 circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGGAAGAAGCAAAAGAAAAATTAAGAAAGTCAAGAGAGGAAATTCGAGCAGAAATTCAGACAGAGAAAAATAAGGTAGTCCAAGAAATGAAGATAAAAGAGAACAAGCCACTGCCACCAGTCCCTATTCCCAACCTTGTAGGAATACGTGGTGGAGACCCAGAAGATAATGACATAAGAGAGAAAAGGGAAAAAATTAAAGAGATGATGAAACATGCTTGGGATAACTATAGGACATATGGGTGGGGACATAATGAACTCAGACCTATTGCAAGGAAAGGACACTCCCCTAACATATTTGGAAGTTCACAAATGGGTGCTACCATAGTAGATGCTTTGGATACCCTTTATATCATGGGACTTCATGATGAATTCCTAGATGGGCAAAGATGGATTGAAGACAACCTTGATTTCAGTGTGAATTCAGAGGTGTCTGTGTTTGAAGTCAACATTCGATTTATTGGAGGCCTACTTGCAGCATATTACCTATCAGGAGAGGAG"
 
 
@@ -15,18 +15,35 @@ circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGG
 #' @param genome : Is the length f the library fragment
 #' @param TxDb : The sequence read length
 #' @param annotationLibrary : annotation database. See details for example.
+#' @param reduce_candidates : IF multiple exon entries align to a single BSJ then either return
+#' longest entry (TRUE) or all entries (FALSE)
+#' @param shiny : If TRUE then will setup shiny progress bars. Default is FALSE where a standard
+#'  text progress bar is used.
 #' @return Returns a DNAstring object.
+#' @details
+#' Backsplice junction coordinates are typically reported as a character string. Two formats
+#' are recognised, ":" delimited (eg circExplorer, CIRI) or "_" delimited (Ularcirc). The
+#' BSJ genomic coordinates are compared against the supplied gene model and exonic sequences
+#' from matching splice junctions are concatenated. This means the BSJ is the first and last
+#' nucleotide of the returned sequence. The current implementation will automatically check 0 or
+#' 1 base coordinates and any match is returned.
+#'
+#' In some cases one BSJ will match multiple exon combinations. The default setting is to return
+#' the longest sequence. Alternatively all possibilities can be returned by setting
+#' reduce_candidates to FALSE. BSJ candidates that align to multiple exon combinations are
+#' added to duplicated list.
+#'
+#' BSJ that do not align to any canonical junctions are returned as failed.
+#'
 #' @examples
 #'
 #' library('Ularcirc')
-#' library('BSgenome.Hsapiens.UCSC.hg38')
-#' library('TxDb.Hsapiens.UCSC.hg38.knownGene')
 #' TxDb <- TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene
 #' genome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
 #' annotationLibrary <- org.Hs.eg.db::org.Hs.eg.db
 #'
 #' # Define BSJ. Following two formats are accepted
-#' BSJ <- 'chr2:40430305-40428472:-'       # SLC8A1
+#' BSJ <- 'chr2:40430305-4 0428472:-'       # SLC8A1
 #' BSJ  <- 'chr2_40430305_chr2_40428472'   # SLC8A1
 #'
 #' circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, "SLC8A1", genome,TxDb, annotationLibrary)
@@ -34,9 +51,30 @@ circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGG
 #' # You can also retrieve sequence without passing gene annotation - but this is slower
 #' # circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, NULL, genome,TxDb, annotationLibrary)
 #'
+#' TxDb <- TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene
+#' genome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
+#' EXAMPLE1 (3 fail and 2 will produce sequences)
+#' BSJ <- c("chr14_99465814_chr14_99458278","chr22_20933778_chr22_20934245",
+#'          "chr12_120155720_chr12_120154969", "chr4_143543508_chr4_143543973",
+#'          "chr10_7285955_chr10_7276891")
+#' GeneIDs <- c("SMARCA5","MSLN","RNF138","KIAA0368","CRKL")
+#' circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, GeneIDs, genome,TxDb, annotationLibrary)
 #'
+#' Returns a list with three items:
+#' (1) "identified" is a list of DNA strings from BSJ that aligned to FSJ coordinates of the gene model
+#' (2) "failed" is a character object of BSJ that did not align to FSJ coordinates of gene model. Each entry is
+#' named with gene ID.
+#' (3) "duplicates" (not implemented yet) identifies which BSJ returned multiple sequences
 #' @export
-bsj_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLibrary)
+#'
+# load(file="c:/TEMP/TestData.RData")  # BSJ and GeneID in circExplorer2 format
+#  bsj_to_circRNA_sequence(BSJ[1:100], as.character(GeneID[1:100]), genome=genome_hg38, TxDb=TxDb_hg38,annotationLibrary = annotationLibrary)
+#  Does not work on unannotated data.
+#
+#
+#  CURRENTLY ANNOTATION FOR MULTIPLE ENTRIES DOES NOT WORK
+bsj_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb,
+                                    annotationLibrary, reduce_candidates = TRUE, shiny=FALSE)
 {
   lookupID <- {}
   BSJ_donor <- {}
@@ -46,29 +84,34 @@ bsj_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
   # chr10:100923974-100926020:+
   # chr11_33286412_chr11_33287512
 
-  if (length(gregexpr("_",BSJ)[[1]]) == 3) # Ularcirc format
+  if (length(gregexpr("_",BSJ)[[1]]) == 3) # Ularcirc format  eg chr14_99465814_chr14_99458278
   {
     BSjuncDetails <- strsplit(BSJ, split = "_")
-    BSJ_donor <- as.numeric(min(BSjuncDetails[[1]][c(2,4)]))
-    BSJ_acceptor <- as.numeric(max(BSjuncDetails[[1]][c(2,4)]))
+    BSJ_donor <- as.numeric(unlist(lapply(BSjuncDetails, FUN = function(x){min(x[c(2,4)])})))
+    BSJ_acceptor <- as.numeric(unlist(lapply(BSjuncDetails, FUN = function(x){max(x[c(2,4)])})))
   }
-  else if (length(gregexpr(":",BSJ)[[1]]) == 2) # generic format
+  else if (length(gregexpr(":",BSJ)[[1]]) == 2) # generic format eg chr10:100923974-100926020:+
   {
     BSjuncDetails <- strsplit(BSJ, split = ":")
-    coordinates <- unlist(strsplit(BSjuncDetails[[1]][2], split="-"))
-    BSJ_donor <- as.numeric(min(coordinates))
-    BSJ_acceptor <- as.numeric(max(coordinates))
+    coordinates <- lapply(BSjuncDetails,FUN = function(x) { strsplit(x[2],split="-")})
+    BSJ_donor <- as.numeric(lapply(coordinates, FUN = function(x) { min(unlist(x)) }))
+    BSJ_acceptor <- as.numeric(lapply(coordinates, FUN = function(x) { max(unlist(x)) }))
   }
   else
   {
     warning("BSJ not in the correct format. Did not detect separating characters.")
     return(NULL)
   }
-
+  if ((length(BSJ_donor) == 0) || (length(BSJ_acceptor) ==0 ))
+  {
+    warning("Could not extract coordinates from BSJ (please check). Aborting")
+    return(NULL)
+  }
 
 
   if (is.null(geneID))  # Identify potential gene coordinate
-  {
+  { warning("This function currently requires annotated data. Please ensure you use parameter geneID")
+    return(NULL)
     g_GR <- GenomicFeatures::genes(TxDb)
     strand <- "*"
     bs_junc_gr <- GenomicRanges::GRanges(seqnames=BSjuncDetails[[1]][1], ranges = as.numeric(min(BSjuncDetails[[1]][c(2,4)]),min(BSjuncDetails[[1]][c(2,4)])),strand = strand)
@@ -83,23 +126,16 @@ bsj_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
       entrezID_end <- g_GR[S4Vectors::subjectHits(t_end)]$gene_id
       entrezID <- intersect(entrezID_start, entrezID_end)
       lookupID <- entrezID
-
-#      entrezID <- try(AnnotationDbi::select(annotationLibrary, keys = entrezID, columns=c("SYMBOL"),keytype="ENTREZID")[,'SYMBOL'],silent=TRUE) # Convert to Symbol
-
-#      if(length(grep(pattern = "Error in ", x = entrezID)))  # This is start of error message when lookup is not linked
-#      {   entrezID <- intersect(entrezID_start, entrezID_end)
-#          entrezID <- try(select(GeneList$Annotation_Library, keys = entrezID, columns=c("SYMBOL"),keytype="ENSEMBL"),silent=TRUE)
-#          entrezID <- entrezID$SYMBOL
-#          if(length(grep(pattern = "Error in ", x = entrezID)))
-#          {    entrezID <- c("Unknown") }
-#      }
     }
-#    geneID <- paste(unique(entrezID),collapse=",")
 
   }
 
+
   if (! is.null(geneID))  # Gene name was provided. Trust this and obtain entrezID
-  {
+  { message("Extracting entrez lookup ID")
+    if (shiny)
+    { shiny::incProgress(1/4, detail = paste("Extracting entrez lookup ID")) }
+
     a <- try(AnnotationDbi::select(annotationLibrary, keys = geneID, columns=c("ENTREZID", "SYMBOL", "ENSEMBL"),keytype="SYMBOL"),silent=TRUE)
     if(length(grep(pattern = "Error", x = a)))
     {   # cannot continue
@@ -109,8 +145,24 @@ bsj_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
     lookupID <- a$ENTREZID   # Default lookup
   }
 
-  if (! is.null(lookupID))
+  if (length(BSJ) != length(geneID))
   {
+    warning("Length of BSJ is not same as length of geneID, please check.")
+    return(NULL)
+  }
+  else
+  { names(BSJ) <- geneID }
+
+
+  genes_to_consider <- length(geneID)
+  if(genes_to_consider > 1)
+    reduce_candidates <- FALSE
+
+  if (! is.null(lookupID))
+  { message("Extracting exon coordinates")
+    if (shiny)
+    { shiny::incProgress(1/4, detail = paste("Extracting exon coordinates")) }
+
     # Create exon table
     b <- try(AnnotationDbi::select(TxDb, keys = lookupID, columns=c('GENEID', 'TXCHROM', 'EXONSTART',  'EXONEND','TXID', 'EXONSTRAND'),keytype="GENEID"),silent=TRUE)
     if(length(grep(pattern = "Error", x = b)))
@@ -119,63 +171,126 @@ bsj_to_circRNA_sequence <- function(BSJ, geneID=NULL, genome, TxDb, annotationLi
       return(-1)
     }
 
-    b <- b[,c("TXCHROM","EXONSTART","EXONEND","TXID","EXONSTRAND")]
-    names(b) <- c('chrom', 'start', 'stop', 'gene','strand')
+    b <- b[,c("GENEID","TXCHROM","EXONSTART","EXONEND","TXID","EXONSTRAND")]
+    names(b) <- c('gene', 'chrom', 'start', 'stop', 'txid','strand')
     b <- data.table::as.data.table(b)
 
-    # Short list exons
-#    BSJ_donor <- as.numeric(min(BSjuncDetails[[1]][c(2,4)]))
-#    BSJ_acceptor <- as.numeric(max(BSjuncDetails[[1]][c(2,4)]))
-    idx <- b$start >= BSJ_donor & b$stop <= BSJ_acceptor
-    possible_exons <- b[idx,]
+    # Need to work through all entries (list) to extract possible exon boundaries
+    if (shiny)
+    { shiny::incProgress(1/4, detail = paste("Short listing exons")) }
 
-    # select candidates. In some situations coordinates may be entered in 0 or 1 base.
+    message("short listing exons")
+    pb <- R.utils::ProgressBar(max=length(BSJ_donor))
+    R.utils::reset(pb)
+    circRNA_exons <- {}
+    failed_BSJ <- {}
+    for (i in seq_along(1:length(BSJ_donor)))
+    {
+      idx <- b$start >= BSJ_donor[i] & b$stop <= BSJ_acceptor[i]
+      possible_exons <- b[idx,]
 
-    true_candidates_stop <- which(abs(possible_exons$start - BSJ_donor) == 1 |
-                                    abs(possible_exons$start - BSJ_donor) == 0)
-    true_candidates_start <- which(abs(possible_exons$stop - BSJ_acceptor) == 1 |
-                                     abs(possible_exons$stop - BSJ_acceptor) == 0 )
+      # select candidates. In some situations coordinates may be entered in 0 or 1 base.
+      true_candidates_stop <- which(abs(possible_exons$start - BSJ_donor[i]) == 1 |
+                                      abs(possible_exons$start - BSJ_donor[i]) == 0)
+      true_candidates_start <- which(abs(possible_exons$stop - BSJ_acceptor[i]) == 1 |
+                                       abs(possible_exons$stop - BSJ_acceptor[i]) == 0 )
 
-    true_candidate_IDs <- intersect(possible_exons$gene[true_candidates_start],
-                                    possible_exons$gene[true_candidates_stop])
-    exon_idx <- possible_exons$gene %in% true_candidate_IDs
-    circRNA_exons <- possible_exons[exon_idx,]
-    if (nrow(circRNA_exons) < 1)
-    { warning("No exons exist within these coordinates")
+      true_candidate_IDs <- intersect(possible_exons$gene[true_candidates_start],
+                                      possible_exons$gene[true_candidates_stop])
+      exon_idx <- possible_exons$gene %in% true_candidate_IDs
+
+      if (length(exon_idx) == 0)
+      { failed_BSJ <- c(failed_BSJ, BSJ[i]) }
+
+      if (length(circRNA_exons) == 0)
+      { circRNA_exons <- possible_exons[exon_idx,]}
+      else
+      {
+        circRNA_exons <- rbind(circRNA_exons, possible_exons[exon_idx,])
+      }
+      R.utils::increase(pb)
+    }  # for (i in seq_along(1:length(BSJ_donor)))
+
+    if (nrow(circRNA_exons) == 0)
+    {
+      warning("No exon junctions aligned with BSJ coorindates, therfore no sequences recovered")
       return(NULL)
     }
-
     ### Now to work out maximum length by sifting through tx entries and adding up exon lengths
     circRNA_exon_lengths <-by(circRNA_exons,circRNA_exons$gene,identity )  # This makes a list of all transcripts
-
-    circRNA_sizes <- lapply(X = circRNA_exon_lengths,FUN = function(x) { return(abs(sum(x$start-x$stop)))})
+    circRNA_sizes <- lapply(X = circRNA_exon_lengths,FUN = function(x) {  return(abs(sum(x$start-x$stop)))})
     circRNA_sizes_idx <- order(unlist(circRNA_sizes), decreasing = TRUE)
-    largest_transcript_ID <- names(circRNA_sizes[circRNA_sizes_idx])[1]
-    transcript_ID_idx <- which(names(circRNA_exon_lengths) == largest_transcript_ID)  # Get Index of transcript ID name
-    transcript_ID_idx <- which(circRNA_exons$gene == names(circRNA_exon_lengths)[transcript_ID_idx])  # Get Row index(es) corresponding to transcript
-    Exons_of_Interest <- circRNA_exons[transcript_ID_idx,]
-    Exons_of_Interest <- Exons_of_Interest[ ! duplicated(Exons_of_Interest)]  # Sometimes there is duplicated records.
 
-    circRNA_Sequence <- ''
-    FSJs <- c(1)# This will contain start positions for ALL Forward splice junctions
-    for (i in 1:nrow(Exons_of_Interest))   # Need to stitch together multiple exons
-    { tmp <- as.character(Biostrings::getSeq(genome,Exons_of_Interest$chrom[i],
-                                 start=Exons_of_Interest$start[i],
-                                 end=Exons_of_Interest$stop[i],
-                                 strand = Exons_of_Interest$strand[i])  )
-    FSJs <- c(FSJs, FSJs[i] + nchar(tmp))
-    circRNA_Sequence <- paste(circRNA_Sequence,tmp,sep="",collapse = "")
+
+    # Sometimes a single BSJ can align to multiple exons within a transcript.
+    # In these situations will choose the longest entry as the candidate circRNA entry.
+    Exons_of_Interest <- circRNA_exons  # default is to select all entries
+    duplicated_BSJ <- {}
+    if (reduce_candidates)
+    { largest_transcript_ID <- names(circRNA_sizes[circRNA_sizes_idx])[1]
+      transcript_ID_idx <- which(names(circRNA_exon_lengths) == largest_transcript_ID)  # Get Index of transcript ID name
+      transcript_ID_idx <- which(circRNA_exons$gene == names(circRNA_exon_lengths)[transcript_ID_idx])  # Get Row index(es) corresponding to transcript
+      Exons_of_Interest <- circRNA_exons[transcript_ID_idx,]
+      Exons_of_Interest <- Exons_of_Interest[ ! duplicated(Exons_of_Interest)]  # Sometimes there is duplicated records.
+    }
+    else # Will return all candidates
+    { # would be nice to record how many possible duplicate entries
+    #  all_entries <- table(names(circRNA_sizes))
+
+
     }
 
-    circRNA_Sequence <- Biostrings::DNAString(circRNA_Sequence)
-    return(circRNA_Sequence)
-  }
+    message("Extracting sequence")
+    if (shiny)
+    { shiny::incProgress(1/4, detail = paste("Extracting sequence")) }
+    else
+    {
+      pb <- R.utils::ProgressBar(max=length(circRNA_exon_lengths))
+      R.utils::reset(pb)
+    }
+
+     all_seq <- Biostrings::getSeq(genome,Exons_of_Interest$chrom,start=Exons_of_Interest$start, end=Exons_of_Interest$stop, strand=Exons_of_Interest$strand)
+     names(all_seq) <- Exons_of_Interest$gene
+     exons_to_stitch <- table(Exons_of_Interest$gene)
+     temp <- by(data.frame(as.character(all_seq), names(all_seq)), names(all_seq), identity)
+     all_circRNA_seq <- lapply(temp, FUN= function(x) {  R.utils::increase(pb);
+          paste(as.character(x[,1]) ,sep="",collapse = "")})
+
+#    message("Extracting sequence - method 2")
+#    R.utils::reset(pb)
+#    circRNA_exon_lengths <- by(circRNA_exons,Exons_of_Interest$gene,identity )
+#    circRNA_sequence <- lapply(X = circRNA_exon_lengths, FUN= function(x) {     R.utils::increase(pb); sequence_from_exon_coords(genome, x) })
+
+    return(list(identified=all_circRNA_seq, failed=failed_BSJ, duplicates=duplicated_BSJ))
+  } # if (! is.null(lookupID))
 
   warning("Cannot find or match gene ID")
   return(NULL)
 
 }
 
+#################################################################333
+#' sequence_from_exon_coords
+#'
+#' @param genome : genome object
+#' @param exon_df : data frame of exons. Must have column with names "chrom", "start",
+#'    "stop", "strand"
+#'
+sequence_from_exon_coords <- function(genome, exon_df)
+{
+  seq <- ''
+  if (nrow(exon_df) < 1)
+  { return(seq) }
+
+
+  tmp <- as.character(Biostrings::getSeq(genome,exon_df$chrom,
+                                           start=exon_df$start,
+                                           end=exon_df$stop,
+                                           strand = exon_df$strand)  )
+  seq <- paste(tmp,sep="",collapse = "")
+
+  return(seq)
+}
 
 
 ####
@@ -297,11 +412,4 @@ bsj_fastq_generate <- function(circRNA_Sequence, fragmentLength=300, readLength=
   read_two <- Biostrings::reverseComplement(Biostrings::DNAStringSet(x=read_two))
   return(list(read1 =read_one, read2 = read_two))
 }
-
-
-
-
-
-
-
 

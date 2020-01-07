@@ -692,7 +692,6 @@ LoadJunctionData <- function(filename, ChromFilter, StrandFilter, Genomic_Distan
   total_rows <- 0; n_UniqueJunctions <- 0;   n_UniqueJunctions_PostFilt <- 0;
   ncolumns <- 1
 
-
 	# AddColumns function populates a column with a unique identifier for backsplice junctions plus a column for input file ID
 	AddColumns <- function(junc, File_Index)
 	{	setnames(junc,1:14,c("chromDonor","startDonor","strandDonor",
@@ -721,18 +720,18 @@ LoadJunctionData <- function(filename, ChromFilter, StrandFilter, Genomic_Distan
 	#                 <SampleID>.SJ.out.tab
 	#
 	# Filter for accepted file types by extension only
-	filename_idx <- grep(pattern = "\\.out.tab(.gz|)$", x = filename$name)
-	filename_idx <- c(filename_idx, grep(pattern = "\\.Chimeric.out.junction(.gz|)$", x = filename$name))
+	filename_idx <- grep(pattern = "(\\.|)out.tab(.gz|)$", x = filename$name)
+	filename_idx <- c(filename_idx, grep(pattern = "(\\.|)Chimeric.out.junction(.gz|)$", x = filename$name))
 	filename_idx <- c(filename_idx, grep(pattern = "\\.ce(.gz|)$", x = filename$name))
 	filename_idx <- c(filename_idx, grep(pattern = "\\.ciri(.gz|)$", x = filename$name))
 
 	failed_IDs <- setdiff(filename$name, filename$name[filename_idx])
 #browser()
 	# Trim extensions of all acceptible filetypes, will use as names throughout Ularcirc experience.
-	IDs <- unique(gsub(pattern="\\.Chimeric.out.junction(.gz|)$",replacement="",x=filename$name[filename_idx]))
-	IDs <- unique(gsub(pattern="\\.SJ.out.tab(.gz|)$",replacement="",x=IDs))
+	IDs <- unique(gsub(pattern="(\\.|)Chimeric.out.junction(.gz|)$",replacement="",x=filename$name[filename_idx]))
+	IDs <- unique(gsub(pattern="(\\.|)SJ.out.tab(.gz|)$",replacement="",x=IDs))
 	IDs <- unique(gsub(pattern="\\.rtSJ.out.tab(.gz|)$",replacement="",x=IDs))
-	IDs <- unique(gsub(pattern="\\.ReadsPerGene.out.tab(.gz|)$",replacement="",x=IDs))
+	IDs <- unique(gsub(pattern="(\\.|)ReadsPerGene.out.tab(.gz|)$",replacement="",x=IDs))
 	IDs <- unique(gsub(pattern="\\.ce(.gz|)$",replacement="",x=IDs))
 	IDs <- unique(gsub(pattern="\\.ciri(.gz|)$",replacement="",x=IDs))
 
@@ -741,39 +740,43 @@ LoadJunctionData <- function(filename, ChromFilter, StrandFilter, Genomic_Distan
 
 withProgress(message="Importing data. This could take a few minutes", value=0, {
   ID_index <- 0
-	for (i in IDs)#1: length(IDs))
+	for (i in IDs)
 	{
 	  ID_index <- ID_index + 1
 	  ######## READ in BSJ counts ##############
 	  incProgress(1/(length(IDs)*2), detail = paste("Loading BSJ for file number ", i))
-	  Chimeric_Idx <- grep(pattern=paste(i,".Chimeric.out.junction(.gz|)",sep=""), x=filename$name )
+	  Chimeric_Idx <- grep(pattern=paste(i,"(\\.|)Chimeric.out.junction(.gz|)",sep=""), x=filename$name )
 	  if (length(Chimeric_Idx) > 0)
 	  { FileTypeCounts$STAR_BSJ <<- FileTypeCounts$STAR_BSJ + 1
-	    data_set <- fread(filename$datapath[Chimeric_Idx[1]], sep="\t")
+#	    data_set <- fread(filename$datapath[Chimeric_Idx[1]], sep="\t", fill = TRUE)
+#	  browser()
+	    starChimeric <- Ularcirc::loadSTAR_chimeric(filename$datapath[Chimeric_Idx[1]],
+	                                                ID_index= ID_index,
+	                                                returnColIdx=1:14)
+	    data_set <- starChimeric$data_set
 	    total_rows <- nrow(data_set)
 	    n_UniqueJunctions <- length(table(data_set$BSjuncName))
-	    if (ncol(data_set) != 14)
-	    {   if (ncol(data_set == 15))  # STAR 2.6 has 15 columns
-	          data_set <- data_set[,1:14]
-	    }
-	    if (ncol(data_set) == 14)           # Chimeric Junction data file from STAR aligner
+
+	    # if (ncol(data_set) != 14)
+	    # {   if (ncol(data_set == 15))  # STAR 2.6 has 15 columns
+	    #       data_set <- data_set[,1:14]
+	    # }
+	    if (ncol(data_set) == 16)           # Chimeric Junction data file from STAR aligner
 	    { IDs_idx <- c(IDs_idx, i)
-	      setnames(data_set,1:14,c("chromDonor","startDonor","strandDonor", "chromAcceptor","startAcceptor","strandAcceptor",
-	                           "JuncType", "RepeatLength_L", "RepeatLength_R",  "ReadName","FirstBase_1stSeq","CIGAR_1stSeg",
-	                           "FirstBase_2ndSeq","CIGAR_2ndSeg"))
-	      data_set$BSjuncName <- paste(data_set$chromDonor,data_set$startDonor,data_set$chromAcceptor, data_set$startAcceptor,sep="_")
-	      data_set$DataSet <-  ID_index	# This adds an index to identify the file
+	      # setnames(data_set,1:14,c("chromDonor","startDonor","strandDonor", "chromAcceptor","startAcceptor","strandAcceptor",
+	      #                      "JuncType", "RepeatLength_L", "RepeatLength_R",  "ReadName","FirstBase_1stSeq","CIGAR_1stSeg",
+	      #                      "FirstBase_2ndSeq","CIGAR_2ndSeg"))
+	      # data_set$BSjuncName <- paste(data_set$chromDonor,data_set$startDonor,data_set$chromAcceptor, data_set$startAcceptor,sep="_")
+	      # data_set$DataSet <-  ID_index	# This adds an index to identify the file
+
 	      DataLists <- FilterChimeric(All_junctions = data_set, ChromFilter=ChromFilter, StrandFilter=StrandFilter, Genomic_Distance=Genomic_Distance, RAD_filter=RAD_filter, CanonicalJuncs=CanonicalJuncs)
-######################################### Can possibly delete this line
-  #	    DataLists$SummaryData <- SelectUniqueJunctions(DataLists$RawData)   # May not need this line
-#########################################
 
   		  DataType <- c("BackSplice")
 	      n_UniqueJunctions_PostFilt <- length(table(data_set$BSjuncName))
 
 	      # Merge Dataset to master table
 	      if (! is.null(AllData))
-	      {  # We should have 15 columns of data at this stage. Merge everything.
+	      {
   	      if ((ncol(DataLists$RawData) > 1) && (ncol(AllData) == ncol(DataLists$RawData)) )
 	        { AllData<-rbind(AllData,DataLists$RawData)   }
 	      }
@@ -786,9 +789,9 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 	                           JuncType=0, RepeatLength_L=0, RepeatLength_R=0,  ReadName="fake",FirstBase_1stSeq=0,CIGAR_1stSeg="0M",
 	                           FirstBase_2ndSeq=0,CIGAR_2ndSeg="0M")
 	    data_set$BSjuncName <- paste(data_set$chromDonor,data_set$startDonor,data_set$chromAcceptor, data_set$startAcceptor,sep="_")
-	    data_set$DataSet <-  1
+	    data_set$DataSet <-  ID_index
 	    DataLists <- FilterChimeric(All_junctions = data_set, ChromFilter=ChromFilter, StrandFilter=StrandFilter, Genomic_Distance=Genomic_Distance, RAD_filter=RAD_filter, CanonicalJuncs=CanonicalJuncs)
-	#    SummarisedData <- DataLists$SummaryData
+
 	    AllData <- DataLists$RawData
 	    total_rows=1
 	    n_UniqueJunctions=1
@@ -797,7 +800,7 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 
 	  ######## READ in STAR FSJ counts ##############
 	  incProgress(1/(length(IDs)*2), detail = paste("Loading FSJ for file number ", i))
-	  Linear_Idx <- grep(pattern=paste(i,".SJ.out.tab(.gz|)",sep=""), x=filename$name )
+	  Linear_Idx <- grep(pattern=paste(i,"(\\.|)SJ.out.tab(.gz|)",sep=""), x=filename$name )
 	  if (length(Linear_Idx) > 0)
 	  { data_set <- fread(filename$datapath[Linear_Idx[1]], sep="\t")
 
@@ -856,7 +859,7 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 
 
     ######## READ in gene counts ##############
-	  ReadsPerGene_Idx <- grep(pattern=paste(i,".ReadsPerGene.out.tab(.gz|)",sep=""), x=filename$name )
+	  ReadsPerGene_Idx <- grep(pattern=paste(i,"(\\.|)ReadsPerGene.out.tab(.gz|)",sep=""), x=filename$name )
 	  if (length(ReadsPerGene_Idx) > 0)
 	  { data_set <- {}
 	    data_set <- fread(filename$datapath[ReadsPerGene_Idx[1]], sep="\t")
@@ -928,24 +931,27 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 
 	  listID <- paste("Group_",ID_index,sep="")
     SampleList[listID] <- i
-	 } # 	for (i in 1: length(IDs))
-
+	 } # 	for (i in IDs)
+  #browser()
+  cat("Data all loaded")
 
 }) # withProgress
 
   IDs_idx <- unique(IDs_idx)   # List of all IDs that were successfully loaded
   failed_IDs <- c(failed_IDs, setdiff(IDs, IDs_idx))
-
-  blurb <- HTML(paste("One or more files failed to load either because they had the wrong
-                 extension or were not of the correct format. File must end with either <br>
-                 .SJ.out.tab <br> <b>or</b> <br> .ReadsPerGene.out.tab <br><b>or</b> <br>
-                .Chimeric.out.junction. <br><br>
-                 <b>Please review the following files that failed to upload:</b><br>",
-                      paste(failed_IDs,sep="<br>")))
   IDs <- IDs_idx
 
   if (length(failed_IDs) > 0) # Provide user feedback with failed files
-  { showModal(modalDialog(title="Issues with some selected files",blurb,easyClose=TRUE,footer=NULL))
+  {  blurb <- HTML(paste("One or more files failed to load either because they had the wrong
+                          extension or were not of the correct format. File extensions must be either
+                          <br> .SJ.out.tab <br> <b>or</b>
+                          <br> .ReadsPerGene.out.tab <br> <b>or</b>
+                          <br> .Chimeric.out.junction. <br> <b>or</b>
+                          <br> .ce <b>or</b>  <br> .ciri
+                          <br><br>
+                         <b>Please review the following files that failed to upload:</b><br>",
+                         paste(failed_IDs,sep="<br>")))
+    showModal(modalDialog(title="Issues with some/all selected files",blurb,easyClose=TRUE,footer=NULL))
   }
 
 	return(list(Junctions=AllData, SummarisedData=NULL,
@@ -1375,7 +1381,7 @@ withProgress(message="Annotating table", value=0, {
 	incProgress(1/3, detail = paste("Assembling BSJ table"))
 	gr_positions <- GRanges(string_coordinates)
 
-
+browser()
 
 	# Identify SYMBOL function and extract all genes symbols
 #	Annotation_Library <- get(input$Annotation_lib)
@@ -2049,14 +2055,15 @@ debug(debugme)
 })
 
 
-	#########################################3
+	##################################################################
 	## PartialPooledDataSet
-	# This function will build table on either individual or grouped selected individual data sets.
+	# This function will build table on STAR data from either individual
+	 # or grouped selected individual data sets.
 
 	PartialPooledDataSet <- observeEvent(input$buildTable_Button, { # reactive({
 	  if (length(input$BSJ_data_source) == 0)   # No data loaded
 	  {	  return(NULL)  }
-
+#browser()
 
 	  if (input$BSJ_data_source != "STAR")
 	  { return(NULL)}
@@ -2149,11 +2156,13 @@ debug(debugme)
   	                                            MaxDisplay = nrow(toDisplay$RAW),
   	                                            input$LibraryStrandType, input=input)
   	        }
+            rowsLeft = nrow(toDisplay$RAW)
             # Apply RAD filter if requested
   	        if (input$Display_RAD_Score)
   	        {  idx_to_remove<- Identify_poor_RAD(toDisplay$RAW$TypeII_TypeIII)
   	           if (length(idx_to_remove) > 0)
   	           { toDisplay$RAW <- toDisplay$RAW[-1*idx_to_remove,] }
+  	           rowsLeft <- rowsLeft - length(idx_to_remove)
   	        }
             # Apply FSJ filter if requested
             if (input$Apply_FSJ_Filter)
@@ -2161,7 +2170,15 @@ debug(debugme)
               idx_to_remove <-  which(toDisplay$RAW$FSJ_support < 1)
               if (length(idx_to_remove) > 0)
               { toDisplay$RAW <- toDisplay$RAW[-1*idx_to_remove,]  }
+              rowsLeft <- rowsLeft - length(idx_to_remove)
             }
+            if (rowsLeft <= 0)
+            { blurb <- paste0("RAD and/or FSJ filters left no data!
+                              You can modify these filter settings by selecting
+                              'display filter options' on left hand tab.")
+              showModal(modalDialog(title="Filter applied",blurb,easyClose=TRUE,footer=NULL))
+            }
+
             toDisplay$RAW <- toDisplay$RAW[,.(Gene, Freq,BSjuncName,TypeII_TypeIII, strandDonor, FSJ_support, JuncType)]
           }
 
@@ -2176,6 +2193,7 @@ debug(debugme)
 	        }
 
 	        toDisplay$CPM <- toDisplay$RAW
+	        toDisplay$CPM_GENE <- toDisplay$RAW
 	        toDisplay$CPM$Freq <- round((toDisplay$RAW$Freq / toDisplay$TOTAL_COUNTS * 1000000),2)
 	        toDisplay$CPM_GENE$Freq <- 0
 
@@ -2189,11 +2207,11 @@ debug(debugme)
               Gene_Counts <- colSums(GeneCounts[idx_remove,2:5])
 
               if (input$LibraryStrandType == "Unstranded")
-              {  toDisplay$CPM_GENE$Freq <- toDisplay$RAW$Freq/Gene_Counts["unstranded"]  }
+              {  toDisplay$CPM_GENE$Freq <- round(toDisplay$RAW$Freq/Gene_Counts["unstranded"] * 10000000,3)  }
               if (input$LibraryStrandType == "Opposing strand")
-              {  toDisplay$CPM_GENE$Freq <- toDisplay$RAW$Freq/Gene_Counts["Rstrand"]  }
+              {  toDisplay$CPM_GENE$Freq <- round(toDisplay$RAW$Freq/Gene_Counts["Rstrand"]* 10000000,3)  }
               if (input$LibraryStrandType == "Same Strand")
-              {  toDisplay$CPM_GENE$Freq <- toDisplay$RAW$Freq/Gene_Counts["Fstrand"] }
+              {  toDisplay$CPM_GENE$Freq <- round(toDisplay$RAW$Freq/Gene_Counts["Fstrand"]* 10000000,3) }
               # input$LibraryStrandType
             }
 	        }
@@ -3117,15 +3135,33 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
     }
     else if (input$Global_Analysis_Plots_Options == "circRNA size distribution")
     { # Not functional yet
- #     browser()
-      # Following code too slow... Will need to implement this a different way
+
+      # circExplorer data does not currently work
+
+
       genome <- GeneList()$Genome
       TxDb <- GeneList()$transcript_reference
-      annotationLibrary <- GeneList()$Annotaion_Library
-      circRNA_sequence <- BSJ_to_circRNA_sequence(BSJ = inputData$RAW$BSjuncName[1],
-                                   geneID = inputData$RAW$Gene[1],
+      annotationLibrary <- GeneList()$Annotation_Library
+
+      withProgress(message="Calculating circRNA predicted sizes", value=0, {
+browser()
+        # Need to sublist based on count
+        lastColumn <- ncol(inputData$RAW)
+        threshold_idx <- apply(inputData$RAW[,3:lastColumn],1,FUN = function(x) {any(x > 4 )})
+        filtered_data <- inputData$RAW[threshold_idx,]
+
+
+
+        circRNA_sequence <- Ularcirc::bsj_to_circRNA_sequence(BSJ = filtered_data$BSjuncName,
+                                   geneID = as.character(filtered_data$Gene),
                                    genome = genome, TxDb = TxDb,
                                    annotationLibrary = annotationLibrary)
+
+      })      # withProgress(message="Calculating circRNA predicted sizes", value=0, {
+      if (which(names(circRNA_sequence) == "identified"))
+      { circRNA_sizes <- nchar(circRNA_sequence$identified)
+        hist(circRNA_sizes,breaks=100,main="distribution of predicted circRNA sizes")
+      }
     }
 
  	})
