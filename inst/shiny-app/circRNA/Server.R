@@ -1381,7 +1381,7 @@ withProgress(message="Annotating table", value=0, {
 	incProgress(1/3, detail = paste("Assembling BSJ table"))
 	gr_positions <- GRanges(string_coordinates)
 
-browser()
+#browser()
 
 	# Identify SYMBOL function and extract all genes symbols
 #	Annotation_Library <- get(input$Annotation_lib)
@@ -3144,7 +3144,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
       annotationLibrary <- GeneList()$Annotation_Library
 
       withProgress(message="Calculating circRNA predicted sizes", value=0, {
-browser()
+#browser()
         # Need to sublist based on count
         lastColumn <- ncol(inputData$RAW)
         threshold_idx <- apply(inputData$RAW[,3:lastColumn],1,FUN = function(x) {any(x > 4 )})
