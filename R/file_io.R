@@ -21,7 +21,7 @@ chimericStats <- function(chimericDT)
 
  return(list(totalRows= total_rows, uniqueJunctionNum = n_UniqueJunctions))
 }
- 
+
 
 ####################################################################
 #' loadSTAR_chimeric
@@ -114,7 +114,8 @@ loadSTAR_chimeric <- function(filename=NULL, ID_index = 0, returnColIdx=1:21)
   # If so need to re-format data
   alignmentStats = NULL
   commandLine = NULL
-  if (grep(pattern = "Nreads",x = data_set[total_rows,1]))
+#browser()
+  if (length(grep(pattern = "Nreads",x = data_set[total_rows,1])) > 0)
   { # Collect meta data from last two rows and then remove
     alignmentStats <- paste(data_set[total_rows,],collapse = " ")
     commandLine <- paste(data_set[total_rows -1,],collapse = " ")
@@ -127,7 +128,7 @@ loadSTAR_chimeric <- function(filename=NULL, ID_index = 0, returnColIdx=1:21)
 
   }
 
-  data_set <- data_set[,returnColIdx]
+  data_set <- data_set[,..returnColIdx]
   data.table::setnames(data_set,returnColIdx,colnameIDs)
 
   # Fix up numeric columns which are converted to characters if alignmentStats not null
