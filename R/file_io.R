@@ -128,7 +128,7 @@ loadSTAR_chimeric <- function(filename=NULL, ID_index = 0, returnColIdx=1:21)
 
   }
 
-  data_set <- data_set[,returnColIdx]
+  data_set <- data_set[,..returnColIdx]
   data.table::setnames(data_set,returnColIdx,colnameIDs)
 
   # Fix up numeric columns which are converted to characters if alignmentStats not null
