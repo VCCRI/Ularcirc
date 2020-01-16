@@ -13,7 +13,7 @@ biocViews: DataRepresentation,Visualization, Genetics, Sequencing, Annotation,
 License: file LICENSE
 Encoding: UTF-8
 LazyData: true
-Depends: R (>= 3.4.0),data.table (>= 1.9.4)
+Depends: R (>= 3.4.0),data.table
 Imports: AnnotationHub, 
         AnnotationDbi, BiocGenerics,
         Biostrings,
