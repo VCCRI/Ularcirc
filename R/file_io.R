@@ -192,6 +192,7 @@ FilterChimeric_Ularcirc <- function(All_junctions, ChromFilter=TRUE, StrandFilte
 #' SelectUniqueJunctions, loadSTAR_chimeric
 #'
 #' @import data.table
+#'
 #' @export
 FilterChimericJuncs <- function(All_junctions, chromFilter=TRUE, strandFilter=TRUE,
                                 genomicDistance=c(200,100000),  canonicalJuncs=TRUE,
