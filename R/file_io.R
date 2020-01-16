@@ -147,7 +147,6 @@ loadSTAR_chimeric <- function(filename=NULL, ID_index = 0, returnColIdx=1:21)
 }
 
 
-
 ####################################################################################################
 #' Wrapper function for Ularcirc shiny app which expects a list of objects to be returned
 #'
@@ -170,37 +169,34 @@ FilterChimeric_Ularcirc <- function(All_junctions, ChromFilter=TRUE, StrandFilte
 }
 
 
-#########################################################################################################################
+
 #' FilterChimeric
+#'
+#' @description
+#'	A generic function that filters STAR chimeric junction files on certain genomic criteria (eg strand, same chromosome etc).
+#'	Useful filter to remove the most obvious false positives. The default filter settings are suitable for circRNA
+#'  discovery in humans / mice data sets.
 #'
 #' @param ChromFilter : when TRUE (default) both chimera parts have to align to same chromosome
 #' @param StrandFilter : when TRUE (default) both chimera parts have to align to same strand
 #' @param Genomic_Distance : minimum and maximum distance filters of chimeric reads on chromosome. Only is applied
 #'  if ChromFilter is TRUE and StrandFilter is TRUE
 #' @param CanonicalJuncs : when TRUE
-#' @param fileID :
-#' @param ChrM_Filter :
-#' @param InvertReads :
+#' @param fileID : blah balh
+#' @param ChrM_Filter : blah blah
+#' @param InvertReads : blah blah
 #'
 #'
-#'	@description
-#'	A generic function that filters STAR chimeric junction files on certain genomic criteria (eg strand, same chromosome etc).
-#'	Useful filter to remove the most obvious false positives. The default filter settings are suitable for circRNA
-#'  discovery in humans / mice data sets.
 #'
 #' @seealso
 #' SelectUniqueJunctions, loadSTAR_chimeric
 #'
-#' @example
 #'
 #'
-#' @export
 FilterChimericJuncs <- function(All_junctions, chromFilter=TRUE, strandFilter=TRUE,
                                 genomicDistance=c(200,100000),  canonicalJuncs=TRUE,
                                 fileID= c(-1), chrM_Filter=TRUE, invertReads = FALSE)
 {
-
-
   if (fileID[1] != -1)  # Select data from files that user has selected
   {	All_junctions <- Filter_by_Data_Set(fileID, All_junctions)	}
 
@@ -256,7 +252,9 @@ FilterChimericJuncs <- function(All_junctions, chromFilter=TRUE, strandFilter=TR
 
 
   return(RawData=All_junctions)
+
 }
+
 
 ##################################################################################################
 #'chimericFilters
@@ -285,7 +283,6 @@ chimericFilters <- function(BSjuncName=NULL, sortDir="Descending", indexNumber=1
                     ...)
   return(filterlist)
 }
-
 
 ################################################################################################
 #' SelectUniqueJunctions
@@ -335,7 +332,6 @@ SelectUniqueJunctions <- function(BSJ_junctions,  filterlist = chimericFilters()
 
   # Making a table with following columns:
   #		"BSjuncName" (eg chr9_46241521_chr9_46242431), "type" (canonical/BS), "JuncType" (0 1 2), Count, PCR duplicate score.
-  # 		NOT IMPLEMENTED: annotation,
 
   First_CIGAR <- {}
   Second_CIGAR <- {}
@@ -409,7 +405,7 @@ SelectUniqueJunctions <- function(BSJ_junctions,  filterlist = chimericFilters()
         matching_coord_entries$CIGAR_2ndSeg <- CIGAR_temp
 
         if (dim(matching_coord_entries)[1])
-        {  		  OneJunctionReads <- rbind(OneJunctionReads, matching_coord_entries) }
+	{ OneJunctionReads <- rbind(OneJunctionReads, matching_coord_entries) }
 
         break
         } # if (! is.na(junc_count[matching_coord_ID]))
@@ -539,3 +535,4 @@ RAD_score <- function(CIGAR_1stSeg = NULL, CIGAR_2ndSeg = NULL, RADcountThreshol
   return(round(TypeII_from_CIGAR/ (TypeII_from_CIGAR + TypeIII_from_CIGAR),digits))
 
 }
+
