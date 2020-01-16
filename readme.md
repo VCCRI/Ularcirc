@@ -11,7 +11,7 @@ You can install Ularcirc using the 'devtools' package.
 
     > install.packages("devtools")
     > library(devtools)
-    > devtools::install_github("VCCRI/Ularcirc", build = TRUE, build_opts = c("--no-resave-data", "--no-manual"))
+    > devtools::install_github("VCCRI/Ularcirc", build = TRUE, build_vignettes = TRUE, build_opts = c("--no-resave-data", "--no-manual"))
 
 Ularcirc can annotate circRNA with overlapping gene information. This is obtained from available 
 bioconductor databases. Use the following command to identify what databases to download:
