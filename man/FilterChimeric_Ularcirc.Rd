@@ -6,16 +6,40 @@
 \usage{
 FilterChimeric_Ularcirc(
   All_junctions,
-  ChromFilter = TRUE,
-  StrandFilter = TRUE,
-  Genomic_Distance = c(200, 1e+05),
-  CanonicalJuncs = TRUE,
+  chromFilter = TRUE,
+  strandFilter = TRUE,
+  genomicDistance = c(200, 1e+05),
+  canonicalJuncs = TRUE,
   fileID = c(-1),
-  ChrM_Filter = TRUE,
-  InvertReads = FALSE,
-  SummaryNumber = 50
+  chrM_Filter = TRUE,
+  invertReads = FALSE,
+  unstranded = FALSE,
+  summaryNumber = 50
 )
 }
+\arguments{
+\item{All_junctions}{: data.table of chimeric reads from STAR aligner}
+
+\item{chromFilter}{: when TRUE (default) both chimera parts have to align to same chromosome}
+
+\item{strandFilter}{: when TRUE (default) both chimera parts have to align to same strand}
+
+\item{genomicDistance}{: minimum and maximum distance filters of chimeric reads on chromosome. Only is applied
+if ChromFilter is TRUE and StrandFilter is TRUE}
+
+\item{canonicalJuncs}{: Will include any canonical junctions (default TRUE). Note STAR keeps canonical junctions that do not conform to aligner rules.}
+
+\item{fileID}{: Specify a file index. Useful if planing to concatenating all data sets into a single table.}
+
+\item{chrM_Filter}{: Filter out mitochondrial chimeric reads (default TRUE)}
+
+\item{invertReads}{: Boolean that specifies in read strand should be inverted (default FALSE).}
+
+\item{unstranded}{: Boolen for if reads are unstranded}
+
+\item{summaryNumber}{: Number (Integer) of records to display in shiny app}
+}
 \description{
-Wrapper function for Ularcirc shiny app which expects a list of objects to be returned
+NEED to ensure that  unstranded boolean value is passed to this function
+Not tested via shiny app yet.
 }

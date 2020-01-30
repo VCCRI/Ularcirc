@@ -7,7 +7,7 @@
 SelectUniqueJunctions(
   BSJ_junctions,
   filterlist = chimericFilters(),
-  library_strand = "Opposing strand",
+  unstranded = FALSE,
   FSJ_Junctions = NULL,
   shinyapp = FALSE
 )
@@ -17,7 +17,7 @@ SelectUniqueJunctions(
 
 \item{filterlist}{: filterlist}
 
-\item{library_strand}{: default is "Opposing strand"}
+\item{unstranded}{: If TRUE will match reads from both strands.}
 
 \item{FSJ_Junctions}{: Junction to display.}
 
@@ -32,5 +32,4 @@ This is the workhorse for collated BSJ junctions from the input data. It will re
    selected rows of data (annotated) that will enable enhanced browsing of raw data on the fly.
 
 	Filter options: Junction abundance. Sort
-   library_strand = "Opposing strand" or "Same strand" or "Unstranded"
 }

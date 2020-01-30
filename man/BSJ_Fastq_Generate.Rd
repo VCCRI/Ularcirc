@@ -4,8 +4,13 @@
 \alias{bsj_fastq_generate}
 \title{bsj_fastq_generate}
 \usage{
-bsj_fastq_generate(circRNA_Sequence, fragmentLength = 300,
-  readLength = 100, variations = 4, headerID = "")
+bsj_fastq_generate(
+  circRNA_Sequence,
+  fragmentLength = 300,
+  readLength = 100,
+  variations = 4,
+  headerID = ""
+)
 }
 \arguments{
 \item{circRNA_Sequence}{: Linear sequence of a circRNA. i.e. the backspice junction
@@ -32,7 +37,7 @@ Takes a circRNA predicted sequence and generates synthetic short sequence reads
 library('Ularcirc')
 
 
-# Generate a 500nt sequence containing A" and which is flanked with GG and CC.
+# Generate a 500nt sequence containing A and which is flanked with GG and CC.
 circRNA_Sequence <- paste(rep('A',500),collapse='')
 circRNA_Sequence <- paste('GG',circRNA_Sequence, 'CC', sep='')
 # The GG and CC ends of sequence represent ends of linear exons that are circularised.

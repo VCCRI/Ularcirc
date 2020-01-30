@@ -16,7 +16,7 @@ chimericStats <- function(chimericDT)
 
   total_rows <- nrow(chimericDT)
   # Number of unique junctions
-  tableSummary <- table(data_set$BSjuncName)
+  tableSummary <- table(chimericDT$BSjuncName)
   n_UniqueJunctions <- length(tableSummary)
 
  return(list(totalRows= total_rows, uniqueJunctionNum = n_UniqueJunctions))
@@ -150,20 +150,40 @@ loadSTAR_chimeric <- function(filename=NULL, ID_index = 0, returnColIdx=1:21)
 ####################################################################################################
 #' Wrapper function for Ularcirc shiny app which expects a list of objects to be returned
 #'
+#'  NEED to ensure that  unstranded boolean value is passed to this function
+#' Not tested via shiny app yet.
+#'
+#' @param All_junctions : data.table of chimeric reads from STAR aligner
+#' @param chromFilter : when TRUE (default) both chimera parts have to align to same chromosome
+#' @param strandFilter : when TRUE (default) both chimera parts have to align to same strand
+#' @param genomicDistance : minimum and maximum distance filters of chimeric reads on chromosome. Only is applied
+#'  if ChromFilter is TRUE and StrandFilter is TRUE
+#' @param canonicalJuncs : Will include any canonical junctions (default TRUE). Note STAR keeps canonical junctions that do not conform to aligner rules.
+#' @param fileID : Specify a file index. Useful if planing to concatenating all data sets into a single table.
+#' @param chrM_Filter : Filter out mitochondrial chimeric reads (default TRUE)
+#' @param invertReads : Boolean that specifies in read strand should be inverted (default FALSE).
+#' @param unstranded : Boolen for if reads are unstranded
+#' @param summaryNumber : Number (Integer) of records to display in shiny app
 #'
 #'
 #'
-FilterChimeric_Ularcirc <- function(All_junctions, ChromFilter=TRUE, StrandFilter=TRUE,
-                                    Genomic_Distance=c(200,100000),  CanonicalJuncs=TRUE,
-                                    fileID= c(-1), ChrM_Filter=TRUE, InvertReads = FALSE, SummaryNumber = 50)
+#'
+FilterChimeric_Ularcirc <- function(All_junctions, chromFilter=TRUE, strandFilter=TRUE,
+                                    genomicDistance=c(200,100000),  canonicalJuncs=TRUE,
+                                    fileID= c(-1), chrM_Filter=TRUE, invertReads = FALSE,
+                                    unstranded=FALSE, summaryNumber = 50)
 {
-  filtered_Rawdata <- FilterChimericJuncs(All_junctions, ChromFilter=TRUE, StrandFilter=TRUE,
-                                          Genomic_Distance=c(200,100000),  CanonicalJuncs=TRUE,
-                                          fileID= c(-1), ChrM_Filter=TRUE, InvertReads = FALSE)
+  filtered_Rawdata <- FilterChimericJuncs(All_junctions, chromFilter=chromFilter,
+                                          strandFilter=strandFilter,
+                                          genomicDistance=genomicDistance,
+                                          canonicalJuncs=canonicalJuncs,
+                                          fileID= c(-1), chrM_Filter=chrM_Filter,
+                                          invertReads = invertReads)
 
-  filterlist <- list(BSjuncName=NULL, SortDir="Descending", IndexNumber=1, DisplayNumber=SummaryNumber, DisplayRAD_score= FALSE, Apply_FSJ_Filter=FALSE)
+  filterlist <- list(BSjuncName=NULL, SortDir="Descending", IndexNumber=1, DisplayNumber=summaryNumber,
+                     DisplayRAD_score= FALSE, Apply_FSJ_Filter=FALSE)
 
-  SummaryData <- SelectUniqueJunctions(All_junctions, filterlist = filterlist)
+  SummaryData <- SelectUniqueJunctions(All_junctions, filterlist = filterlist, unstranded=unstranded)
 
   return(list(RawData=All_junctions,  SummaryData= SummaryData))
 }
@@ -177,19 +197,26 @@ FilterChimeric_Ularcirc <- function(All_junctions, ChromFilter=TRUE, StrandFilte
 #'	Useful filter to remove the most obvious false positives. The default filter settings are suitable for circRNA
 #'  discovery in humans / mice data sets.
 #'
-#' @param ChromFilter : when TRUE (default) both chimera parts have to align to same chromosome
-#' @param StrandFilter : when TRUE (default) both chimera parts have to align to same strand
-#' @param Genomic_Distance : minimum and maximum distance filters of chimeric reads on chromosome. Only is applied
+#' @param All_junctions : data.table of chimeric reads from STAR aligner
+#' @param chromFilter : when TRUE (default) both chimera parts have to align to same chromosome
+#' @param strandFilter : when TRUE (default) both chimera parts have to align to same strand
+#' @param genomicDistance : minimum and maximum distance filters of chimeric reads on chromosome. Only is applied
 #'  if ChromFilter is TRUE and StrandFilter is TRUE
-#' @param CanonicalJuncs : when TRUE
-#' @param fileID : blah balh
-#' @param ChrM_Filter : blah blah
-#' @param InvertReads : blah blah
+#' @param canonicalJuncs : Will include any canonical junctions (default TRUE). Note STAR keeps canonical junctions that do not conform to aligner rules.
+#' @param fileID : Specify a file index. Useful if planing to concatenating all data sets into a single table.
+#' @param chrM_Filter : Filter out mitochondrial chimeric reads (default TRUE)
+#' @param invertReads : Boolean that specifies in read strand should be inverted (default FALSE).
 #'
 #'
 #'
 #' @seealso
 #' SelectUniqueJunctions, loadSTAR_chimeric
+#'
+#' @example
+#' extdata_path <- system.file("extdata",package = "Ularcirc")
+#' chimeric.file <- paste0(extdata_path,"/SRR444655_subset.Chimeric.out.junction.gz")
+#' chimericsDT <- Ularcirc::loadSTAR_chimeric(chimeric.file,returnColIdx = 1:14)
+#' chimericsDT$filtered <- Ularcirc::FilterChimericJuncs(chimericsDT$data_set, canonicalJuncs = TRUE)
 #'
 #' @import data.table
 #'
@@ -198,19 +225,23 @@ FilterChimericJuncs <- function(All_junctions, chromFilter=TRUE, strandFilter=TR
                                 genomicDistance=c(200,100000),  canonicalJuncs=TRUE,
                                 fileID= c(-1), chrM_Filter=TRUE, invertReads = FALSE)
 {
+  # Setup colmn name ID lookups. Setting up this way to remove warning on package build.
+  cn <- c(chromDonor="chromDonor", chromAcceptor="chromAcceptor",
+          strandDonor="strandDonor",strandAcceptor="strandAcceptor" )
+
   if (fileID[1] != -1)  # Select data from files that user has selected
   {	All_junctions <- Filter_by_Data_Set(fileID, All_junctions)	}
 
   All_junctions <- data.table::data.table(All_junctions)
   if (chromFilter == TRUE)
-  {	All_junctions = All_junctions[chromDonor == chromAcceptor,]		}
+  {	All_junctions = All_junctions[get(cn["chromDonor"]) == get(cn["chromAcceptor"]),]		}
 
   if (chrM_Filter == TRUE)
-  { All_junctions = All_junctions[chromDonor != "chrM",]	}
+  { All_junctions = All_junctions[get(cn["chromDonor"]) != "chrM",]	}
 
 
   if (strandFilter == TRUE)
-  {	All_junctions = All_junctions[strandDonor == strandAcceptor,]	}
+  {	All_junctions = All_junctions[get(cn["strandDonor"]) == get(cn["strandAcceptor"]),]	}
 
   if (invertReads == TRUE)
   {
@@ -267,21 +298,20 @@ FilterChimericJuncs <- function(All_junctions, chromFilter=TRUE, strandFilter=TR
 #' needing to extract a specific junction. Default NULL.
 #' @param sortDir : Specifies how data is sorted, either "Descending" (default) or "Ascending".
 #' @param indexNumber : Filter data according to this file index
-#' @param displayNumer : Number
+#' @param displayNumber : Number of records to display in an shiny app
 #' @param displayRADscore : Boolean. If TRUE then will apply/calculate RAD score
 #' @param RADcountThreshold : Integer. The minimum count threshold required to calculate RAD score.
 #' i.e. A default RAD score of -1 will be applied to any BSJ with a count less than this score
-#' @param displayFSJfilter :
+#' @param applyFSJfilter : Boolean of whether to apply FSJ filter
 #'
 #' @export
 chimericFilters <- function(BSjuncName=NULL, sortDir="Descending", indexNumber=1, displayNumber=10,
-                            displayRADscore= FALSE, RADcountThreshold = 10, applyFSJfilter=FALSE, ...)
+                            displayRADscore= FALSE, RADcountThreshold = 10, applyFSJfilter=FALSE)
 {
 
   filterlist = list(BSjuncName, sortDir, indexNumber, displayNumber,
                     displayRADscore, RADcountThreshold,
-                    applyFSJfilter,
-                    ...)
+                    applyFSJfilter)
   return(filterlist)
 }
 
@@ -292,7 +322,6 @@ chimericFilters <- function(BSjuncName=NULL, sortDir="Descending", indexNumber=1
 #'    selected rows of data (annotated) that will enable enhanced browsing of raw data on the fly.
 #'
 #'		Filter options: Junction abundance. Sort
-#'    library_strand = "Opposing strand" or "Same strand" or "Unstranded"
 #'
 #' @description
 #' Builds a summary table from chimeric data obtained from the STAR aligner. Assembles table with
@@ -301,7 +330,7 @@ chimericFilters <- function(BSjuncName=NULL, sortDir="Descending", indexNumber=1
 #'
 #' @param BSJ_junctions : Junction to display
 #' @param filterlist : filterlist
-#' @param library_strand : default is "Opposing strand"
+#' @param unstranded : If TRUE will match reads from both strands.
 #' @param FSJ_Junctions : Junction to display.
 #' @param shinyapp : Boolean. If true used to setup control status bars in shiny app.
 #'
@@ -309,7 +338,8 @@ chimericFilters <- function(BSjuncName=NULL, sortDir="Descending", indexNumber=1
 SelectUniqueJunctions <- function(BSJ_junctions,  filterlist = chimericFilters(),
                                   #filterlist = list(BSjuncName=NULL, SortDir="Descending",
                                   # IndexNumber=1, DisplayNumber=10, DisplayRAD_score= FALSE, Apply_FSJ_Filter=FALSE),
-                                  library_strand = "Opposing strand", FSJ_Junctions=NULL, shinyapp=FALSE)
+#                                  library_strand = "Opposing strand", FSJ_Junctions=NULL, shinyapp=FALSE)
+                                  unstranded = FALSE, FSJ_Junctions=NULL, shinyapp=FALSE)
 {
 
   if (! is.null(filterlist$BSjuncName))
@@ -350,14 +380,14 @@ SelectUniqueJunctions <- function(BSJ_junctions,  filterlist = chimericFilters()
   UniqueJunctions <- {}
 
 
-  filtersteps <- function(shinyapp=TRUE)
+  filtersteps <- function(shinyapp=TRUE, BSjuncName, JuncType, strandDonor)
   {
     Max_Display <- filterlist$IndexNumber + filterlist$DisplayNumber
 
     for(i in filterlist$IndexNumber : Max_Display)
     {
       if (shinyapp)
-      { incProgress(1/Max_Display, detail = paste("Updating Row ",i)) }
+      { shiny::incProgress(1/Max_Display, detail = paste("Updating Row ",i)) }
 
 
       # Check to make sure the loop increment has not jumped past the max numbers of entries
@@ -376,10 +406,9 @@ SelectUniqueJunctions <- function(BSJ_junctions,  filterlist = chimericFilters()
         temp <- OneJunctionReads[1,.(BSjuncName, JuncType, strandDonor)]
         temp$type <- "unknown"
       }
-
       ## If data is unstranded we need to collapse alignments from both strands
       additional_counts <- 0
-      if (library_strand == "Unstranded")  # Need to append data from palindrome ID
+      if (unstranded)  # Need to append data from palindrome ID
       {  # Only keep IDs that have a larger coordinate in first position of ID
         decode_juncID <- strsplit(BS_Junc_ID  , "_")
         if (as.numeric(decode_juncID[[1]][4]) > as.numeric(decode_juncID[[1]][2]))
@@ -411,7 +440,7 @@ SelectUniqueJunctions <- function(BSJ_junctions,  filterlist = chimericFilters()
         break
         } # if (! is.na(junc_count[matching_coord_ID]))
         } # for(j in seq_along(search_pattern))
-      } # if (library_strand == "Unstranded")
+      } # if (unstranded)
 
 
 
@@ -463,8 +492,9 @@ SelectUniqueJunctions <- function(BSJ_junctions,  filterlist = chimericFilters()
   # Setup code for either shiny or other progress bar status
   if (shinyapp)
   { # Display shiny progress bars
-    withProgress(message="Calculating read alignment distributions (RAD)", value=0, {
-      UniqueJunctions <- filtersteps(shinyapp = shinyapp)
+    shiny::withProgress(message="Calculating read alignment distributions (RAD)", value=0, {
+      UniqueJunctions <- filtersteps(shinyapp = shinyapp, BSjuncName=BSjuncName,
+                                     JuncType=JuncType, strandDonor=strandDonor)
     }) # withProgress(message="Calculating RAD scores", value=0, {
   }
   else

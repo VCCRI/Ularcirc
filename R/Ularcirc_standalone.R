@@ -53,18 +53,18 @@ circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGG
 #'
 #' TxDb <- TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene
 #' genome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
-#' EXAMPLE1 (3 fail and 2 will produce sequences)
+#' # EXAMPLE1 (3 fail and 2 will produce sequences)
 #' BSJ <- c("chr14_99465814_chr14_99458278","chr22_20933778_chr22_20934245",
 #'          "chr12_120155720_chr12_120154969", "chr4_143543508_chr4_143543973",
 #'          "chr10_7285955_chr10_7276891")
 #' GeneIDs <- c("SMARCA5","MSLN","RNF138","KIAA0368","CRKL")
 #' circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, GeneIDs, genome,TxDb, annotationLibrary)
 #'
-#' Returns a list with three items:
-#' (1) "identified" is a list of DNA strings from BSJ that aligned to FSJ coordinates of the gene model
-#' (2) "failed" is a character object of BSJ that did not align to FSJ coordinates of gene model. Each entry is
-#' named with gene ID.
-#' (3) "duplicates" (not implemented yet) identifies which BSJ returned multiple sequences
+#' # Returns a list with three items:
+#' # (1) "identified" is a list of DNA strings from BSJ that aligned to FSJ coordinates of the gene model
+#' # (2) "failed" is a character object of BSJ that did not align to FSJ coordinates of gene model. Each entry is
+#' # named with gene ID.
+#' # (3) "duplicates" (not implemented yet) identifies which BSJ returned multiple sequences
 #' @export
 #'
 # load(file="c:/TEMP/TestData.RData")  # BSJ and GeneID in circExplorer2 format

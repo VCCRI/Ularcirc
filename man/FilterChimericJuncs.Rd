@@ -16,20 +16,22 @@ FilterChimericJuncs(
 )
 }
 \arguments{
-\item{fileID}{: blah balh}
+\item{All_junctions}{: data.table of chimeric reads from STAR aligner}
 
-\item{ChromFilter}{: when TRUE (default) both chimera parts have to align to same chromosome}
+\item{chromFilter}{: when TRUE (default) both chimera parts have to align to same chromosome}
 
-\item{StrandFilter}{: when TRUE (default) both chimera parts have to align to same strand}
+\item{strandFilter}{: when TRUE (default) both chimera parts have to align to same strand}
 
-\item{Genomic_Distance}{: minimum and maximum distance filters of chimeric reads on chromosome. Only is applied
+\item{genomicDistance}{: minimum and maximum distance filters of chimeric reads on chromosome. Only is applied
 if ChromFilter is TRUE and StrandFilter is TRUE}
 
-\item{CanonicalJuncs}{: when TRUE}
+\item{canonicalJuncs}{: Will include any canonical junctions (default TRUE). Note STAR keeps canonical junctions that do not conform to aligner rules.}
 
-\item{ChrM_Filter}{: blah blah}
+\item{fileID}{: Specify a file index. Useful if planing to concatenating all data sets into a single table.}
 
-\item{InvertReads}{: blah blah}
+\item{chrM_Filter}{: Filter out mitochondrial chimeric reads (default TRUE)}
+
+\item{invertReads}{: Boolean that specifies in read strand should be inverted (default FALSE).}
 }
 \description{
 A generic function that filters STAR chimeric junction files on certain genomic criteria (eg strand, same chromosome etc).

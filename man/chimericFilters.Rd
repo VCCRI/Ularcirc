@@ -11,8 +11,7 @@ chimericFilters(
   displayNumber = 10,
   displayRADscore = FALSE,
   RADcountThreshold = 10,
-  applyFSJfilter = FALSE,
-  ...
+  applyFSJfilter = FALSE
 )
 }
 \arguments{
@@ -23,14 +22,14 @@ needing to extract a specific junction. Default NULL.}
 
 \item{indexNumber}{: Filter data according to this file index}
 
+\item{displayNumber}{: Number of records to display in an shiny app}
+
 \item{displayRADscore}{: Boolean. If TRUE then will apply/calculate RAD score}
 
 \item{RADcountThreshold}{: Integer. The minimum count threshold required to calculate RAD score.
 i.e. A default RAD score of -1 will be applied to any BSJ with a count less than this score}
 
-\item{displayNumer}{: Number}
-
-\item{displayFSJfilter}{:}
+\item{applyFSJfilter}{: Boolean of whether to apply FSJ filter}
 }
 \description{
 This function sets the basic filters that are

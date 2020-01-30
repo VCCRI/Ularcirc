@@ -153,7 +153,7 @@ Ularcirc can annotate backsplice and canonical splice junctions via integrating 
 | OrgDatabase   | org.Mm.eg.db                      |
 
 
-# Workflow
+# shiny app Workflow
 
 Ularcirc is designed to follow a logical systematic workflow which is broken down into five key steps. Each step is can be performed  via a tabs that can be selected via the main panel as shown in figure \ref{MainPanelTabs.PNG}. The workflow commences on the left most tab (setup) which is  the initial screen displayed. The setup tab also  provides a quickstart guide that briely describes the workflow. This chapter provides a more in depth overview of each of these steps and users are encouraged to familiarise themselves with the contents of this chapter to make the most out of Ularcirc.
 
@@ -271,6 +271,67 @@ For microRNA binding site analysis Ularcirc can analyse the predicted circRNA se
 ```{r HG38Slc8a1_miRNA, out.width='65%', fig.cap = 'Ularcirc Junction view tab showing potential miRNA binding sites that reside within Slc8a1',echo=FALSE}
 knitr::include_graphics('BackspliceJunction_miRNA.PNG')
 ```
+
+
+# command line Workflow
+
+NOTE: Work in progress.
+
+A number of Ularcirc functions are also available via the command line. 
+
+## Loading data sets
+
+Individual STAR chimeric read outputs can be loaded via the R command line. The function ```loadSTAR_chimeric``` loads STAR chimeric.out.juntion files (if gzipped must have .gz extension) generated from the STAR aligner. Note that the STAR aligner has undergone at least three major revisions in generating output for Chimeric reads and to accommodate all outputs the ```loadSTAR_chimeric``` returns a list of three items. The list item ```data_set`` contains a data table of the chimeric reads output, note that the number of columns returned is dependent on the number of columns requested (default is 21 columns). STAR aligner 2.7 generated 21 columns, 2.6 produced 15 columns, and STAR 2.5 and earlier version produced 14 columns.  
+
+The list item ```alignmentStats``` and ```commandLine``` collect the meta data provided in STAR 2.7 outputs. These fields will be set to NULL if data was aligned with an earlier  STAR version.
+
+
+```
+extdata_path <- system.file("extdata",package = "Ularcirc")
+chimeric.file <- paste0(extdata_path,"/SRR444655_subset.Chimeric.out.junction.gz")
+
+chimericsDT <- Ularcirc::loadSTAR_chimeric(chimeric.file,returnColIdx = 1:14)
+
+
+```
+
+The chimeric data can then be filtered to enrich for backsplice junctions. The default settings for ```FilterChimericJuncs``` will enrich most circRNAs in human and mouse genomes. This filtered list can then be collated into a ranked count list using the function ```SelectUniqueJunctions```.
+
+
+```
+chimericsDT$filtered <- Ularcirc::FilterChimericJuncs(chimericsDT$data_set, canonicalJuncs = TRUE)
+
+filterlist <- list(BSjuncName=NULL, SortDir="Descending", IndexNumber=1, DisplayNumber=50, DisplayRAD_score= FALSE, Apply_FSJ_Filter=FALSE, unstranded=TRUE)
+
+# The following will assemble a tally of counts for each potential backsplice junction. Note that this data is unstranded so we need to set the unstranded flag.
+chimericsDT$summary  <- Ularcirc::SelectUniqueJunctions(chimericsDT$filtered, filterlist = filterlist, unstranded=TRUE)
+```
+
+
+
+
+# Cache 
+
+Temporary files are created and used throughout a Ularcirc session. For large data sets this is likely to create large temporary files which could impact on file allocation resources. This might be problematic for unix systems as the default cache locations are shown below (taken from rappdirs):  
+
+
+    Mac OS X: '~/Library/Caches/'
+    Unix: '~/.cache/', $XDG_CACHE_HOME if defined
+    Win XP: 'C:\Documents and Settings\\Local Settings\Application Data\\\Cache'
+    Vista: 'C:\Users\\AppData\Local\\\Cache'
+
+source https://www.rdocumentation.org/packages/rappdirs/versions/0.3.1/topics/user_cache_dir
+
+
+
+Note that unix systems can actually define the location by setting/changing the XDG_CACHE_HOME environment variable. This can be done by typing the following line in your .profile file (permanent change) or on the command line (remains active for life of session).
+
+```
+# In the following code  modify /scratch/tmp/ to a location that exists on your system
+mkdir /scratch/tmp/BiocFileCache
+set XDG_CACHE_HOME=/scratch/tmp
+```
+
 
 
 # Session Information-----------------------------------

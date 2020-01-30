@@ -4,8 +4,15 @@
 \alias{bsj_to_circRNA_sequence}
 \title{bsj_to_circRNA_sequence}
 \usage{
-bsj_to_circRNA_sequence(BSJ, geneID = NULL, genome, TxDb,
-  annotationLibrary)
+bsj_to_circRNA_sequence(
+  BSJ,
+  geneID = NULL,
+  genome,
+  TxDb,
+  annotationLibrary,
+  reduce_candidates = TRUE,
+  shiny = FALSE
+)
 }
 \arguments{
 \item{BSJ}{: BSJ coordinate in the format of chr_coordinate_chr_coorindate OR chr:coordinate-coorindate:strand.}
@@ -19,6 +26,12 @@ if this information can be provided.}
 \item{TxDb}{: The sequence read length}
 
 \item{annotationLibrary}{: annotation database. See details for example.}
+
+\item{reduce_candidates}{: IF multiple exon entries align to a single BSJ then either return
+longest entry (TRUE) or all entries (FALSE)}
+
+\item{shiny}{: If TRUE then will setup shiny progress bars. Default is FALSE where a standard
+text progress bar is used.}
 }
 \value{
 Returns a DNAstring object.
@@ -26,17 +39,30 @@ Returns a DNAstring object.
 \description{
 Takes one BSJ coordinate and generates a predicted circular RNA sequence.
 }
+\details{
+Backsplice junction coordinates are typically reported as a character string. Two formats
+are recognised, ":" delimited (eg circExplorer, CIRI) or "_" delimited (Ularcirc). The
+BSJ genomic coordinates are compared against the supplied gene model and exonic sequences
+from matching splice junctions are concatenated. This means the BSJ is the first and last
+nucleotide of the returned sequence. The current implementation will automatically check 0 or
+1 base coordinates and any match is returned.
+
+In some cases one BSJ will match multiple exon combinations. The default setting is to return
+the longest sequence. Alternatively all possibilities can be returned by setting
+reduce_candidates to FALSE. BSJ candidates that align to multiple exon combinations are
+added to duplicated list.
+
+BSJ that do not align to any canonical junctions are returned as failed.
+}
 \examples{
 
 library('Ularcirc')
-library('BSgenome.Hsapiens.UCSC.hg38')
-library('TxDb.Hsapiens.UCSC.hg38.knownGene')
 TxDb <- TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene
 genome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
 annotationLibrary <- org.Hs.eg.db::org.Hs.eg.db
 
 # Define BSJ. Following two formats are accepted
-BSJ <- 'chr2:40430305-40428472:-'       # SLC8A1
+BSJ <- 'chr2:40430305-4 0428472:-'       # SLC8A1
 BSJ  <- 'chr2_40430305_chr2_40428472'   # SLC8A1
 
 circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, "SLC8A1", genome,TxDb, annotationLibrary)
@@ -44,5 +70,18 @@ circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, "SLC8A1", genome,TxDb, annotati
 # You can also retrieve sequence without passing gene annotation - but this is slower
 # circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, NULL, genome,TxDb, annotationLibrary)
 
+TxDb <- TxDb.Hsapiens.UCSC.hg38.knownGene::TxDb.Hsapiens.UCSC.hg38.knownGene
+genome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
+# EXAMPLE1 (3 fail and 2 will produce sequences)
+BSJ <- c("chr14_99465814_chr14_99458278","chr22_20933778_chr22_20934245",
+         "chr12_120155720_chr12_120154969", "chr4_143543508_chr4_143543973",
+         "chr10_7285955_chr10_7276891")
+GeneIDs <- c("SMARCA5","MSLN","RNF138","KIAA0368","CRKL")
+circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, GeneIDs, genome,TxDb, annotationLibrary)
 
+# Returns a list with three items:
+# (1) "identified" is a list of DNA strings from BSJ that aligned to FSJ coordinates of the gene model
+# (2) "failed" is a character object of BSJ that did not align to FSJ coordinates of gene model. Each entry is
+# named with gene ID.
+# (3) "duplicates" (not implemented yet) identifies which BSJ returned multiple sequences
 }
