@@ -1,10 +1,72 @@
 ## Could make a function that returns a couple of circRNA sequences? Could be a resource
 circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGGAAGAAGCAAAAGAAAAATTAAGAAAGTCAAGAGAGGAAATTCGAGCAGAAATTCAGACAGAGAAAAATAAGGTAGTCCAAGAAATGAAGATAAAAGAGAACAAGCCACTGCCACCAGTCCCTATTCCCAACCTTGTAGGAATACGTGGTGGAGACCCAGAAGATAATGACATAAGAGAGAAAAGGGAAAAAATTAAAGAGATGATGAAACATGCTTGGGATAACTATAGGACATATGGGTGGGGACATAATGAACTCAGACCTATTGCAAGGAAAGGACACTCCCCTAACATATTTGGAAGTTCACAAATGGGTGCTACCATAGTAGATGCTTTGGATACCCTTTATATCATGGGACTTCATGATGAATTCCTAGATGGGCAAAGATGGATTGAAGACAACCTTGATTTCAGTGTGAATTCAGAGGTGTCTGTGTTTGAAGTCAACATTCGATTTATTGGAGGCCTACTTGCAGCATATTACCTATCAGGAGAGGAG"
 
+###############################################################################################
+#'
+#' BSJ_details
+#' This function returns details of a BSJ string and returns a list of coordinates. Can accept two
+#' different formats, Ularcirc or  generic.
+#'
+#' @param BSJ : backsplice junction as a string. See details below for example formats
+#'
+#' @examples
+#' bsj <-  'chr14_99465814_chr14_99458278'   # Historic Ularcirc format
+#'
+#' bsj <- c("chr14_99465814_chr14_99458278","chr22_20933778_chr22_20934245",
+#'          "chr12_120155720_chr12_120154969", "chr4_143543508_chr4_143543973",
+#'          "chr10_7285955_chr10_7276891")
+#'
+#' BSJ_details(bsj)
+#'
+#' bsj <- 'chr10:100923974-100926020:+'     # generic format
+#' BSJ_details(bsj)
+#'
+#' @export
+#'
+BSJ_details <- function(BSJ)
+{
+
+  if (length(gregexpr("_",BSJ)[[1]]) == 3) # Ularcirc format  eg chr14_99465814_chr14_99458278
+  {
+    BSjuncDetails <- strsplit(BSJ, split = "_")
+    BSJ_acceptor <- as.numeric(unlist(lapply(BSjuncDetails, FUN = function(x){min(x[c(2,4)])})))
+    BSJ_donor <- as.numeric(unlist(lapply(BSjuncDetails, FUN = function(x){max(x[c(2,4)])})))
+    BSJ_chrom <- unlist(lapply(BSjuncDetails, FUN = function(x) return(x[1]) ))
+    strand <- unlist(lapply(BSjuncDetails, FUN = function(x)
+                                      {  BSJ_strand <- '+'
+
+                                         if (x[2] > x[4])
+                                            BSJ_strand <- '-'
+                                          return(BSJ_strand)
+                                           }))
+
+  }
+  else if (length(gregexpr(":",BSJ)[[1]]) == 2) # generic format eg chr10:100923974-100926020:+
+  {
+    BSjuncDetails <- strsplit(BSJ, split = ":")
+    BSJ_chrom <- lapply(BSjuncDetails,FUN = function(x) { x[1]})
+    coordinates <- lapply(BSjuncDetails,FUN = function(x) { strsplit(x[2],split="-")})
+    BSJ_acceptor <- as.numeric(lapply(coordinates, FUN = function(x) { min(unlist(x)) }))
+    BSJ_donor <- as.numeric(lapply(coordinates, FUN = function(x) { max(unlist(x)) }))
+    strand <- lapply(BSjuncDetails,FUN = function(x) { x[3]})
+  }
+  else
+  {
+    warning("BSJ not in the correct format. Did not detect separating characters.")
+    return(NULL)
+  }
+  if ((length(BSJ_donor) == 0) || (length(BSJ_acceptor) ==0 ))
+  {
+    warning("Could not extract coordinates from BSJ (please check). Aborting")
+    return(NULL)
+  }
+  return(list(BSJ_chrom = BSJ_chrom, BSJ_donor=BSJ_donor, BSJ_acceptor=BSJ_acceptor, strand=strand))
+}
 
 
 
-####
+
+################################################################################################
 #' bsj_to_circRNA_sequence
 #'
 #' Takes one BSJ coordinate and generates a predicted circular RNA sequence.
@@ -43,7 +105,7 @@ circRNA_seq_example <- "GGAAGAGGAAGAACGTCTGAGAAATAAAATTCGAGCTGATCATGAGAAGGCCTTGG
 #' annotationLibrary <- org.Hs.eg.db::org.Hs.eg.db
 #'
 #' # Define BSJ. Following two formats are accepted
-#' BSJ <- 'chr2:40430305-4 0428472:-'       # SLC8A1
+#' BSJ <- 'chr2:40430305-40428472:-'       # SLC8A1
 #' BSJ  <- 'chr2_40430305_chr2_40428472'   # SLC8A1
 #'
 #' circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, "SLC8A1", genome,TxDb, annotationLibrary)
@@ -413,3 +475,89 @@ bsj_fastq_generate <- function(circRNA_Sequence, fragmentLength=300, readLength=
   return(list(read1 =read_one, read2 = read_two))
 }
 
+
+
+######################################################################################################
+#' Grab_BS_Junc_Sequence
+#'
+#'
+#'  This function extracts genomic sequence that is likely to capture BSJ. Function does not cross
+#'  validate to gene models.
+#'
+#'
+#'
+##
+## SelectUniqueJunct_value should be a dataframe with columns names startDonor, strandDonor, startAcceptor.
+##        Currently only extracts information from the first row, but in theory could be rewritten to work on multiple entries
+##
+## NOTE: This was originally designed purely for backsplice junction analysis and because of this the column names are from
+## STAR junction output tables. It is now also used for canonical splice junctions.
+##
+Junction_Sequence_from_Genome <- function(SelectUniqueJunct_Value, GeneList)
+{
+  toDisplay <- c("Error, No coordinate data to extract or no BSJ selected")
+  #browser()
+  if ((nrow(SelectUniqueJunct_Value) >= 1) && (SelectUniqueJunct_Value[1] != "ACTION REQUIRED"))
+  { # Initially assume we have backsplice junciton
+    Seq_length <- 125
+
+
+    Donor <- list()
+    Acceptor <- list()
+    # Following if statements work for illumina Truseq data. Need to identify if this works for same stranded libraries
+    TranscriptStrand <- SelectUniqueJunct_Value$strandDonor[1]
+    Transcriptchrom <- SelectUniqueJunct_Value$chromDonor[1]   # This should be same for donor and acceptor
+
+    if ((TranscriptStrand == '-') && (SelectUniqueJunct_Value$type[1] == 'bs'))  # Need to swap donor and acceptor for BS junctions only
+    {
+      tmp <- SelectUniqueJunct_Value$startDonor[1]
+      SelectUniqueJunct_Value$startDonor[1] <- SelectUniqueJunct_Value$startAcceptor[1]
+      SelectUniqueJunct_Value$startAcceptor[1] <- tmp
+    }
+
+
+    if (TranscriptStrand == '+')
+    { Donor$start <- SelectUniqueJunct_Value$startDonor[1] - Seq_length -1
+    Donor$end   <- SelectUniqueJunct_Value$startDonor[1]  - 1    # +1 ensures start in exon as STAR passes coordinates of intron donor sequence
+    }
+    if (TranscriptStrand == '-')
+    {  Donor$end   <- SelectUniqueJunct_Value$startDonor[1] -1
+    Donor$start <- SelectUniqueJunct_Value$startDonor[1]  - Seq_length -1
+    }
+
+    if (TranscriptStrand == '+')
+    { Acceptor$start <- SelectUniqueJunct_Value$startAcceptor[1] +  1    # -1 ensures start in exon as STAR passes coordinates of intron donor sequence
+    Acceptor$end   <- SelectUniqueJunct_Value$startAcceptor[1] + Seq_length +1
+    }
+    if (TranscriptStrand == '-')
+    {  Acceptor$end   <- SelectUniqueJunct_Value$startAcceptor[1] + Seq_length + 1
+    Acceptor$start <- SelectUniqueJunct_Value$startAcceptor[1] +1
+    }
+
+    # Need to test for kit type . i.e. Same strand or opposing.
+    if (TranscriptStrand =="+")
+      TranscriptStrand <- "-"
+    else
+      TranscriptStrand <- "+"
+
+    DonorSequence <- extractGenomeSequence(Transcriptchrom, Donor$start, Donor$end, TranscriptStrand, GeneList = GeneList)
+    AcceptorSequence <- extractGenomeSequence(Transcriptchrom, Acceptor$start, Acceptor$end, TranscriptStrand, GeneList = GeneList)
+
+
+    if  (SelectUniqueJunct_Value$type[1] == 'c') # Canonical junction
+    { toDisplay <- paste(DonorSequence, AcceptorSequence, sep=".") # Positive strand
+    if (TranscriptStrand =="-")
+      toDisplay <- paste(AcceptorSequence, DonorSequence, sep=".") # Negative strand
+    }
+
+    if (SelectUniqueJunct_Value$type[1] == 'bs')  # backsplice junction
+    { toDisplay <- paste(DonorSequence,AcceptorSequence,sep = ".") # Positive strand  <== currently back to front
+    if (TranscriptStrand =="-")
+      toDisplay <- paste(AcceptorSequence, DonorSequence, sep=".") # Negative strand
+    }
+    toDisplay <- gsub(pattern=" ",replacement="", x=toDisplay)              # Clean up space characters
+  }
+
+  return(toDisplay)
+
+}

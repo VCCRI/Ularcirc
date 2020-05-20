@@ -62,7 +62,7 @@ genome <- BSgenome.Hsapiens.UCSC.hg38::BSgenome.Hsapiens.UCSC.hg38
 annotationLibrary <- org.Hs.eg.db::org.Hs.eg.db
 
 # Define BSJ. Following two formats are accepted
-BSJ <- 'chr2:40430305-4 0428472:-'       # SLC8A1
+BSJ <- 'chr2:40430305-40428472:-'       # SLC8A1
 BSJ  <- 'chr2_40430305_chr2_40428472'   # SLC8A1
 
 circRNA_sequence <- bsj_to_circRNA_sequence(BSJ, "SLC8A1", genome,TxDb, annotationLibrary)

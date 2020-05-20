@@ -282,9 +282,15 @@ Prepare_Gene_Object <- function(GeneName, BS_Junctions, GeneList, File_idx = c(-
 
   if (length(grep(pattern="Error", x=a)))
   {
+    blurb <- HTML(paste0("Please check the following: <br>
+                          (i) is the annotation database loaded (under setup tab)
+                          <br>(ii) did you annotate with parental gene (if using STAR output)
+                          <br>(iii) check if annotated gene name is correct. Possibly even navigating
+                          to gene name via Display_gene_transcripts on left hand side panel.
+                          <br><br>It is also possible (although unlikely) that there is no entry for this gene.
+                          <br><br>No loop plots can be displayed until this issue is resolved."))
     showModal(modalDialog(title="Cannot retrieve genomic information for this gene",
-            "Check that you have loaded an annotation database under the setup tab. Alternatively there is no entry for this gene.
-             No loop plots can be displayed until a database is loaded.",easyClose=TRUE,footer=NULL))
+                              blurb, easyClose=TRUE,footer=NULL))
     return ( NULL )
   }
   lookupID <- a$ENTREZID   # Default lookup
@@ -840,7 +846,7 @@ withProgress(message="Importing data. This could take a few minutes", value=0, {
 
   	    data_set$start <- data_set$start + as.numeric(blocks[,1])
   	    data_set$end <- data_set$end - as.numeric(blocks[,2])
-
+#browser()
   	    # Create a integer strand column from text column
   	    negativeStrandIDX <- which(data_set$strandCHAR =="-")
   	    data_set$strand <- 1
@@ -1447,28 +1453,18 @@ extractGenomeSequence <- function(chr, start, end, strand, GeneList)
 ## NOTE: This was originally designed purely for backsplice junction analysis and because of this the column names are from
 ## STAR junction output tables. It is now also used for canonical splice junctions.
 ##
-Grab_BS_Junc_Sequence <- function(SelectUniqueJunct_Value, GeneList)
+Grab_BS_Junc_Sequence <- function(SelectUniqueJunct_Value, GeneList, Seq_length = 125)
 {
   toDisplay <- c("Error, No coordinate data to extract or no BSJ selected")
 #browser()
   if ((nrow(SelectUniqueJunct_Value) >= 1) && (SelectUniqueJunct_Value[1] != "ACTION REQUIRED"))
   { # Initially assume we have backsplice junciton
-    Seq_length <- 125
-
 
     Donor <- list()
     Acceptor <- list()
     # Following if statements work for illumina Truseq data. Need to identify if this works for same stranded libraries
     TranscriptStrand <- SelectUniqueJunct_Value$strandDonor[1]
     Transcriptchrom <- SelectUniqueJunct_Value$chromDonor[1]   # This should be same for donor and acceptor
-
-    if ((TranscriptStrand == '-') && (SelectUniqueJunct_Value$type[1] == 'bs'))  # Need to swap donor and acceptor for BS junctions only
-    {
-      tmp <- SelectUniqueJunct_Value$startDonor[1]
-      SelectUniqueJunct_Value$startDonor[1] <- SelectUniqueJunct_Value$startAcceptor[1]
-      SelectUniqueJunct_Value$startAcceptor[1] <- tmp
-    }
-
 
     if (TranscriptStrand == '+')
     { Donor$start <- SelectUniqueJunct_Value$startDonor[1] - Seq_length -1
@@ -1488,11 +1484,14 @@ Grab_BS_Junc_Sequence <- function(SelectUniqueJunct_Value, GeneList)
         Acceptor$start <- SelectUniqueJunct_Value$startAcceptor[1] +1
     }
 
-    # Need to test for kit type . i.e. Same strand or opposing.
-    if (TranscriptStrand =="+")
-      TranscriptStrand <- "-"
-    else
-      TranscriptStrand <- "+"
+
+    if (SelectUniqueJunct_Value$type[1] != 'bs')
+    {      # For canonical junctions need to test for kit type . i.e. Same strand or opposing.
+      if (TranscriptStrand =="+")
+        TranscriptStrand <- "-"
+      else
+        TranscriptStrand <- "+"
+    }
 
     DonorSequence <- extractGenomeSequence(Transcriptchrom, Donor$start, Donor$end, TranscriptStrand, GeneList = GeneList)
     AcceptorSequence <- extractGenomeSequence(Transcriptchrom, Acceptor$start, Acceptor$end, TranscriptStrand, GeneList = GeneList)
@@ -2660,6 +2659,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 		  {
   		  if (input$FSJ_data_source == "Regtools")
   		  {
+#browser()
   		    Canonical_Junctions <- Ularcirc_data$ProjectData$ext_FSJ_output$regtools
   		  }
 		  }
@@ -3349,7 +3349,15 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	output$DisplayBS_sequence <- renderUI ({
 	  UniqueJunctions <- Ularcirc_data$Current_Selected_BS_Junction_RAWData
 
-	  toDisplay <- Grab_BS_Junc_Sequence(UniqueJunctions, GeneList = GeneList())
+	  bsj_info <- Ularcirc::BSJ_details(Ularcirc_data$Current_Selected_BS_Junction)
+	  bsj_df <- data.frame(chromDonor=as.character(bsj_info$BSJ_chrom),
+	                                     startDonor=as.numeric(bsj_info$BSJ_donor),
+	                                     startAcceptor=as.numeric(bsj_info$BSJ_acceptor),
+	                                     strandDonor=as.character(bsj_info$strand),
+	                                     type="bs" )
+
+	  toDisplay <- Grab_BS_Junc_Sequence(bsj_df, GeneList = GeneList())
+
 	  toDisplay <- HTML(paste('<p><strong>JUNCTION SEQUENCE: </strong></p>  <p> The full stop represents the junction point::
                     <pre   style=display: block;padding: 9.5px;margin: 0 0 10px;font-size: 13px;line-height: 1.42857143;
 	                  color: #333;word-break: break-all;word-wrap: break-word;
@@ -3367,8 +3375,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	output$Predicted_Genomic_Junction_Sequence <- renderUI ({
 	  FSJ_info <- Ularcirc_data$SelectedGenome_FSJ
 	  strandDonor <- "+"
-	  if (FSJ_info$Strand == 1)
-	  {   strandDonor <- "-" }
+	  if (length(FSJ_info$Strand) > 0)
+	  {   if (FSJ_info$Strand == 1)
+	   	  {   strandDonor <- "-" }
+	  }
 	  Canonical_Junc_Entry <- data.frame(chromDonor=as.character(FSJ_info$Chr),
 	                                     startDonor=as.numeric(FSJ_info$Start),
 	                                     startAcceptor=as.numeric(FSJ_info$End),
@@ -3678,14 +3688,9 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	              n=paste(Ularcirc_data$SelectedGene_from_BSJ_Table, " circRNA", sep=""),
 	              col = "blue")
 
-
-
   	  return(NULL)
-
-
 #  	  incProgress(1/6, detail = paste("updating miRNA sites"))
-
-	})
+	  })
 	})
 
 	output$circRNA_Sequence_Analysis_ORF <- renderPlot({

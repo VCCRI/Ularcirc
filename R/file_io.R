@@ -1,16 +1,34 @@
 ##################################################################
 #' chimericStats
 #'
+#' @description
+#' Simple function that returns a list of basic stats obtained from a STAR
+#' chimeric file
+#'
 #' @param chimericDT : Data table of chimeric junctions as provided by
 #' STAR aligner
 #'
-#' @description
+#'
+#' @examples
+#' extdata_path <- system.file("extdata",package = "Ularcirc")
+#' chimeric.file <- paste0(extdata_path,"/SRR444655_subset.Chimeric.out.junction.gz")
+#' chimericDT <- Ularcirc::loadSTAR_chimeric(chimeric.file,returnColIdx = 1:14)
+#' Ularcirc::chimericStats(chimericDT$data_set)
+#' chimericDT$filtered <- Ularcirc::FilterChimericJuncs(chimericDT$data_set, canonicalJuncs = TRUE)
+#' Ularcirc::chimericStats(chimericDT$filtered)
+#'
+#'
+#' @seealso
+#' FilterChimericJuncs
+#' @export
+#'
+#' TO DO
 #'   Number of chimeric entries
 #'   Number of unique junctions
 #'   Frequency of most abundant junction
 #'   Number of backsplice vs other junctions
+
 #'
-#' @export
 chimericStats <- function(chimericDT)
 {
 
@@ -190,7 +208,7 @@ FilterChimeric_Ularcirc <- function(All_junctions, chromFilter=TRUE, strandFilte
 
 
 
-#' FilterChimeric
+#' FilterChimericJuncs
 #'
 #' @description
 #'	A generic function that filters STAR chimeric junction files on certain genomic criteria (eg strand, same chromosome etc).
@@ -212,7 +230,7 @@ FilterChimeric_Ularcirc <- function(All_junctions, chromFilter=TRUE, strandFilte
 #' @seealso
 #' SelectUniqueJunctions, loadSTAR_chimeric
 #'
-#' @example
+#' @examples
 #' extdata_path <- system.file("extdata",package = "Ularcirc")
 #' chimeric.file <- paste0(extdata_path,"/SRR444655_subset.Chimeric.out.junction.gz")
 #' chimericsDT <- Ularcirc::loadSTAR_chimeric(chimeric.file,returnColIdx = 1:14)
@@ -292,7 +310,7 @@ FilterChimericJuncs <- function(All_junctions, chromFilter=TRUE, strandFilter=TR
 #'chimericFilters
 #'
 #' @description
-#' This function sets the basic filters that are
+#' A wrapper function that prepares a list of filters that can be passed
 #'
 #' @param BSjuncName : A character string that represents a backsplice junction ID. Set when
 #' needing to extract a specific junction. Default NULL.
@@ -304,7 +322,7 @@ FilterChimericJuncs <- function(All_junctions, chromFilter=TRUE, strandFilter=TR
 #' i.e. A default RAD score of -1 will be applied to any BSJ with a count less than this score
 #' @param applyFSJfilter : Boolean of whether to apply FSJ filter
 #'
-#' @export
+#'
 chimericFilters <- function(BSjuncName=NULL, sortDir="Descending", indexNumber=1, displayNumber=10,
                             displayRADscore= FALSE, RADcountThreshold = 10, applyFSJfilter=FALSE)
 {
