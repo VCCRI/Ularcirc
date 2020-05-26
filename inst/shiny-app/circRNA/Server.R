@@ -3356,6 +3356,12 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	                                     strandDonor=as.character(bsj_info$strand),
 	                                     type="bs" )
 
+	  if (input$BSJ_data_source == "CIRI2")
+	  {
+	    bsj_df$startDonor <- bsj_df$startDonor + 1
+	    bsj_df$startAcceptor <- bsj_df$startAcceptor - 1
+	  }
+
 	  toDisplay <- Grab_BS_Junc_Sequence(bsj_df, GeneList = GeneList())
 
 	  toDisplay <- HTML(paste('<p><strong>JUNCTION SEQUENCE: </strong></p>  <p> The full stop represents the junction point::
@@ -3384,6 +3390,8 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	                                     startAcceptor=as.numeric(FSJ_info$End),
 	                                     strandDonor=strandDonor,
 	                                     type="c" )
+
+
 	  Genomic_FSJ_Sequence <- Grab_BS_Junc_Sequence(Canonical_Junc_Entry, GeneList = GeneList())
 
 	  Genomic_FSJ_Sequence <- HTML(paste('<p><strong>Predicted Genomic FSJ SEQUENCE: </strong></p>  <p>
