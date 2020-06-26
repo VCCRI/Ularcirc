@@ -1405,6 +1405,7 @@ withProgress(message="Annotating table", value=0, {
 #	row.names(geneSymbols) <- geneSymbols$gene_id
 
 	g_GR <- genes(GeneList$transcript_reference)
+	seqlevelsStyle(gr_positions) <- "UCSC"
 	all_hits <- findOverlaps(invertStrand(gr_positions) , genes(GeneList$transcript_reference))
 	identified_geneIDs <- g_GR[subjectHits(all_hits)]$gene_id
 	identified_gene_symbols <- geneSymbols[identified_geneIDs,2]
