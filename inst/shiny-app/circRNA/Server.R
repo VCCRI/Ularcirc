@@ -193,10 +193,6 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
 	                             name=bedJunctions$name, score=bedJunctions$total,
 	                             strand1=bedJunctions$strand, strand2=bedJunctions$strand)
 
-#	  bedJunctions <- as.dataframe(bedJunctions) # [,.(chrom, start, start, chrom, end, end, name, total, strand, strand)]
-
-#	  bedJunctions <- cbind(bedJunctions[,.(chrom, start, start, chrom, end, end, name, total, strand, strand)]
-#	  setnames(bedJunctions,1:10,c("chrom1","start1", "end1", "chrom2", "start2", "end2", "name", "score", "strand1", "strand2"))
 
 	  pbpe = plotBedpe(bedJunctions, chrom, chromstart, chromend, heights = bedJunctions$score, plottype="loops", color = color_to_graph)
 	  labelgenome(chrom, chromstart,chromend,n=3,scale="Mb")
@@ -205,7 +201,7 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
 	  mtext("Linear junctions",side=3,line=0,cex=.75,font=1.5)
 
 	  ### Plot backsplice junctions
-#	  browser()
+#browser()
 	  bedJunctions <- junc$uniques.bed[JunctionType==JunctionOption,]	}
 	  typeIV_idx <-  which(bedJunctions$JunctionType == -1)
 	  if (length(typeIV_idx) > 0)
@@ -1387,8 +1383,6 @@ withProgress(message="Annotating table", value=0, {
 	incProgress(1/3, detail = paste("Assembling BSJ table"))
 	gr_positions <- GRanges(string_coordinates)
 
-#browser()
-
 	# Identify SYMBOL function and extract all genes symbols
 #	Annotation_Library <- get(input$Annotation_lib)
 	all_functions <- ls(paste("package", input$Annotation_lib, sep=":"))
@@ -1405,7 +1399,30 @@ withProgress(message="Annotating table", value=0, {
 #	row.names(geneSymbols) <- geneSymbols$gene_id
 
 	g_GR <- genes(GeneList$transcript_reference)
-	seqlevelsStyle(gr_positions) <- "UCSC"
+
+	# Start check to see if aligned data is compatible with annotation database
+	matchingChromosomes <- intersect(seqlevels(gr_positions), seqlevels(g_GR))
+  if (length(matchingChromosomes) == 0)
+  { # No chromosomes align - this is suspicious.
+    blurb <- {}
+    seqlevelsStyle(gr_positions) <- "UCSC"
+    matchingChromosomes <- intersect(seqlevels(gr_positions), seqlevels(g_GR))
+    if (length(matchingChromosomes) > 0)
+    { # Solved a chromosome compatibility issue. Complete fix and report to user.
+      blurb <- c('Detected mismatched chromosome naming between sequencing data. Have been able to partly fix this issue.
+              However it is strongly advised to select the Fix chromosome compatibility button on this page and then re-save data')
+
+    }
+    else
+    {
+      blurb <- 'Ularcirc has detected no matching chromosomes of top circRNA candidates to annotation
+                 database. Therefore entries will be annotated as NOVEL. You might need to check what
+                reference your data was aligned to.'
+    }
+    showModal(modalDialog(title="NOTICE: mismatched references",blurb,easyClose=TRUE,footer=NULL))
+
+  }
+
 	all_hits <- findOverlaps(invertStrand(gr_positions) , genes(GeneList$transcript_reference))
 	identified_geneIDs <- g_GR[subjectHits(all_hits)]$gene_id
 	identified_gene_symbols <- geneSymbols[identified_geneIDs,2]
@@ -2660,11 +2677,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 		  {
   		  if (input$FSJ_data_source == "Regtools")
   		  {
-#browser()
   		    Canonical_Junctions <- Ularcirc_data$ProjectData$ext_FSJ_output$regtools
   		  }
 		  }
-
+#browser()
 		  PGO<-Prepare_Gene_Object(Ularcirc_data$Current_SelectedGene, BS_Junctions = Ularcirc_data$ProjectData$Junctions,
 		                                      GeneList= GeneList(), File_idx = idx,
 		                                      Canonical_Junctions = Canonical_Junctions)
@@ -2779,7 +2795,54 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 
 	   BSJ_table_header <- paste(input$BSJ_data_source,': Junction table of selected data sets', sep="")
 
-    h4(BSJ_table_header)
+
+    w <- h4(BSJ_table_header)
+    w <- paste(w, actionButton("checkChrom","Fix chromosome compatibility"))
+    HTML(w)
+
+	})
+
+	observeEvent(input$checkChrom, {
+	  # Test if chromosome entries match annotation database. If not try and ammend
+
+
+	  # Take first 1000 chimeric alignments
+	  max_entries <- nrow(Ularcirc_data$ProjectData$Junctions)
+	  if (max_entries > 1000)
+	  {  max_entries <- 1000 }
+
+	  chrom_entries <- Ularcirc_data$ProjectData$Junctions$chromDonor[1:max_entries]
+
+#	  browser()
+	  # Check if annotation database is loaded.
+	  geneInfo  <- GeneList()
+	  if (! is.null(geneInfo))
+	  {
+	    geneInfo  <- GeneList() # (transcript_reference=TxDb, Genome=Genome, Annotation_Library = Annotation_Library, GeneList=GL))
+	    TxDb_levels <- seqlevels(geneInfo$transcript_reference)
+	    commonChrom <- intersect(TxDb_levels, chrom_entries)
+
+
+
+
+	    if (length(commonChrom) == 0)
+	    {
+	      chrom_entries <- paste0("chr",chrom_entries)
+	      commonChrom <- intersect(TxDb_levels, chrom_entries)
+	      if (length(commonChrom) > 0)
+	      {   Ularcirc_data$ProjectData$Junctions$chromDonor <- paste0("chr",Ularcirc_data$ProjectData$Junctions$chromDonor)
+	          Ularcirc_data$ProjectData$Junctions$chromAcceptor <- paste0("chr",Ularcirc_data$ProjectData$Junctions$chromAcceptor)
+	          Ularcirc_data$ProjectData$Canonical_AllData$chrom <- paste0("chr",Ularcirc_data$ProjectData$Canonical_AllData$chrom)
+	          showModal(modalDialog(title="Success","Modified chromosoome entries", easyClose=TRUE,footer=NULL))
+	      }
+	    }
+
+	  }
+
+	  #Ularcirc_data$GenePanelLoaded
+
+
+
 	})
 
 	output$DisplayJunctionCountTable<- renderDataTable({   # DisplayAllJunctions <- renderDataTable({
@@ -3801,6 +3864,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	})
 
 
+
 	Previous_m379 <- observeEvent(input$LoadProjectRequest,
 	 { LoadStatus <- c("No project to load")
 
@@ -4076,7 +4140,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
   	  strand <- 1  # +ve strand
   	  if (Ularcirc_data$Genome_Coordinates$chromstrand == "-")
   	    strand <- 2
-
+#browser()
   	  BS_Junctions <- Ularcirc_data$ProjectData$Junctions
   	  BS_Junctions <- circJunctions(BS_Junctions ,Ularcirc_data$Genome_Coordinates$chrom,
   	                             Ularcirc_data$Genome_Coordinates$chromstart, Ularcirc_data$Genome_Coordinates$chromend,fileID=idx)
