@@ -480,10 +480,12 @@ bsj_fastq_generate <- function(circRNA_Sequence, fragmentLength=300, readLength=
 ######################################################################################################
 #' Grab_BS_Junc_Sequence
 #'
-#'
+#' @description 
 #'  This function extracts genomic sequence that is likely to capture BSJ. Function does not cross
 #'  validate to gene models.
-#'
+#'  
+#' @param SelectUniqueJunct_value : a dataframe with columns names startDonor, strandDonor, startAcceptor
+#' @param GeneList : GeneList
 #'
 #'
 ##

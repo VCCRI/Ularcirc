@@ -24,13 +24,13 @@ Imports: AnnotationHub,
         ggplot2, ggrepel, gsubfn,
         mirbase.db, moments,
         Organism.dplyr,
+        plotgardener,
 		R.utils,
         S4Vectors, 
         shiny, shinydashboard,
         shinyFiles, shinyjs,
-        Sushi,
         yaml
-RoxygenNote: 7.0.2.9000
+RoxygenNote: 7.1.2
 Suggests: BSgenome.Hsapiens.UCSC.hg38, 
           BiocStyle,
           httpuv,

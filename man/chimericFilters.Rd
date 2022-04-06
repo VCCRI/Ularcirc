@@ -32,5 +32,5 @@ i.e. A default RAD score of -1 will be applied to any BSJ with a count less than
 \item{applyFSJfilter}{: Boolean of whether to apply FSJ filter}
 }
 \description{
-This function sets the basic filters that are
+A wrapper function that prepares a list of filters that can be passed
 }

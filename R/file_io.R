@@ -21,14 +21,13 @@
 #' @seealso
 #' FilterChimericJuncs
 #' @export
-#'
-#' TO DO
-#'   Number of chimeric entries
-#'   Number of unique junctions
-#'   Frequency of most abundant junction
-#'   Number of backsplice vs other junctions
-
-#'
+#
+# TO DO
+#   Number of chimeric entries
+#   Number of unique junctions
+#   Frequency of most abundant junction
+#   Number of backsplice vs other junctions
+#
 chimericStats <- function(chimericDT)
 {
 

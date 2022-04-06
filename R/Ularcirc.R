@@ -9,7 +9,7 @@
 #' # through your internet browser
 #'
 #' library("Ularcirc")
-#' \donttest{ Ularcirc() }
+#' \dontrun{ Ularcirc() }
 #'
 #'
 #' @export

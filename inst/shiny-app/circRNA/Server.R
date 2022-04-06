@@ -6,7 +6,7 @@ library(DT)
 # library(gsubfn)			# Use strapplyc
 library(Biostrings)
 require(GenomicFeatures)
-library(Sushi)
+#library(Sushi)
 #library(moments)   # skewness and kurtosis
 library(Organism.dplyr)
 
@@ -136,6 +136,7 @@ circJunctions<-function(All_junctions, chrom, chromstart, chromend, fileID = c(-
 ##
 circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_coords, JunctionOption, Junction_highlight=list(BSjunc=NULL, Canonical=NULL), currentGeneSymbol=NULL)
 {
+ # browser()
   junc <- GeneObject$Junctions
   if (length(junc) == 0)
 	{	cat(paste("length of zero (junc) in circFigure_template1"))
@@ -202,7 +203,10 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
 
 	  ### Plot backsplice junctions
 #browser()
-	  bedJunctions <- junc$uniques.bed[JunctionType==JunctionOption,]	}
+	  bedJunctions <- junc$uniques.bed[JunctionType==JunctionOption,]	
+	}
+	
+	
 	  typeIV_idx <-  which(bedJunctions$JunctionType == -1)
 	  if (length(typeIV_idx) > 0)
 	  { bedJunctions <- bedJunctions[(typeIV_idx * -1), ]   # Currently not plotting type IV BSJs
@@ -249,6 +253,79 @@ circFigure_template1 <-function(GeneObject, chrom, chromstart, chromend, zoom_co
 
 }
 
+
+###############################################################################
+# circFigure_plotGardener
+#
+# Note not currently using JunctionOption. At one stage was thining of using 
+#     this as a way to filter out/in type IV BSJ. Currently ignoring them.
+#
+# New plotting template that uses plotGardener
+circFigure_plotGardener <-function(GeneObject, chrom, chromstart, chromend, zoom_coords, JunctionOption, Junction_highlight=list(BSjunc=NULL, Canonical=NULL), currentGeneSymbol=NULL)
+{
+  # browser()
+  junc <- GeneObject$Junctions
+  if (length(junc) == 0)
+  {	cat(paste("length of zero (junc) in circFigure_plotGardener"))
+    return (NULL)
+  }
+  
+  # Extract information on transcripts. Output not currently used.
+  # Hopefully plotGardener will allow transcript colouring in future.
+  display_transcript <- data.frame(GeneObject$Transcript)
+
+  transcript_colours <- rep(x = "black",nrow(display_transcript))
+  if (GeneObject$SelectedTranscript != "")
+  {
+    transcript_idx <- which(display_transcript$gene == GeneObject$SelectedTranscript)
+    transcript_colours[transcript_idx] <- "orange"
+  }
+    
+  ## Assemble linear junctions. 
+  temp <- group_by(GeneObject$Transcript_Canonical_juncs, chrom, start, name,  end, strand)
+  bedJunctions <- as.data.table(summarise(temp,total=sum(score)))
+  color_to_graph <- rep("black",nrow(bedJunctions))
+  if (! is.null(Junction_highlight$Canonical$Chr))
+  {
+    BSjunc_idx <- bedJunctions[(chrom == as.character(Junction_highlight$Canonical$Chr)) &
+                      (start == as.numeric(Junction_highlight$Canonical$Start)) &
+                      (end == as.numeric(Junction_highlight$Canonical$End)),which = TRUE]
+    color_to_graph[BSjunc_idx] <- "red"
+  }
+  FSJcolours <- color_to_graph
+  FSJ_data <- data.table(chrom1=bedJunctions$chrom, start1=bedJunctions$start,
+                        end1=bedJunctions$start, chrom2=bedJunctions$chrom,
+                        start2=bedJunctions$end, end2=bedJunctions$end,
+                        name=bedJunctions$name, score=bedJunctions$total,
+                       strand1=bedJunctions$strand, strand2=bedJunctions$strand)
+    
+  ### Prepare backsplice junctions
+  BSJ_data <- junc$uniques.bed[JunctionType==JunctionOption,]	
+ 
+  # Filter out type IV junctions - not plotting these
+  typeIV_idx <-  which(BSJ_data$JunctionType == -1)
+  if (length(typeIV_idx) > 0)
+  { BSJ_data <- BSJ_data[(typeIV_idx * -1), ] }
+  
+  ## set BSJ colours
+  color_to_graph <- rep("black",nrow(BSJ_data))  # Default colour = black
+  if (! is.null(Junction_highlight$BSjunc))
+  {
+    idx.BSJ <- which(BSJ_data$name == Junction_highlight$BSjunc)
+    color_to_graph[idx.BSJ] <- "cyan"      # Colour user selected junction light blue
+  }
+  BSJcolours <- color_to_graph
+  
+  plot_AllJunctions(assembly="hg38", chrom=chrom, 
+                    chromstart=chromstart, chromend=chromend,
+                    BSJData=BSJ_data, BSJ_colors = BSJcolours,
+                    FSJData=FSJ_data, FSJ_colors = FSJcolours,
+                    geneSymbol=currentGeneSymbol) 
+   
+}
+
+
+
 #################################################################################
 ### Extracts genomic coordinates of a Gene, draws image and returns exon boundaries as dataframe object
 ##
@@ -266,7 +343,9 @@ Prepare_Gene_Object <- function(GeneName, BS_Junctions, GeneList, File_idx = c(-
     return(NULL)
   }
 
-  test <- gsubfn::strapplyc(as.character(GeneName),pattern="^ENSG([-0-9]+)")
+#  test <- gsubfn::strapplyc(as.character(GeneName),pattern="^ENSG([-0-9]+)")
+  test0 <- gsubfn::strapplyc(as.character(GeneName),pattern="^(ENS[[:alpha:]]*).*")
+  test <- gsubfn::strapplyc(as.character(GeneName),pattern=paste0("^",test0[[1]],"([-0-9]+)"))
   if (length(test[[1]]) > 0)  # Ensembl ID
   { ensembl_gene <- paste("ENSG",test[[1]],sep="")
     a <- try(select(GeneList$Annotation_Library, keys = ensembl_gene, columns=c("ENTREZID", "SYMBOL", "ENSEMBL"),keytype="ENSEMBL"),silent=TRUE)
@@ -406,23 +485,35 @@ Draw_Transcript_Exons<-function(GeneObject, JunctionOption, Zoom_coords, GenomeD
 	}
 
   if (length(grep(pattern = "uniques.bed", x = names(GeneObject$Junctions))))
-	{   circFigure_template1(GeneObject = GeneObject,chrom = chrom,chromstart=chromstart, chromend=chromend, JunctionOption=JunctionOption, Junction_highlight=Junction_highlight, currentGeneSymbol=currentGeneSymbol )
+	{#   circFigure_template1(GeneObject = GeneObject,chrom = chrom,chromstart=chromstart, chromend=chromend, JunctionOption=JunctionOption, Junction_highlight=Junction_highlight, currentGeneSymbol=currentGeneSymbol )
+    circFigure_plotGardener(GeneObject = GeneObject,
+                            chrom = chrom,   chromstart=chromstart, 
+                            chromend=chromend, 
+                            JunctionOption=JunctionOption, 
+                            Junction_highlight=Junction_highlight, 
+                            currentGeneSymbol=currentGeneSymbol )
 	}
 
 	if (length(GeneObject$Junctions) == 1)	# No circRNAs to display. Just show transcript
-	{ if (length(GeneObject$Transcript_Canonical_juncs) == 7 ) # We have canonical junctions to view but no Backsplice.
-  	{
+	{ if (length(GeneObject$Transcript_Canonical_juncs) == 7 ) # Must contain 7 columns
+  	{# Canonical junctions to view but no Backsplice junctions.
 	    # Make a dummy backsplice junction object
 	    GeneObject$Junctions <- list()
 	    GeneObject$Junctions$uniques.bed <- GeneObject$Transcript_Canonical_juncs[1,]
 	    GeneObject$Junctions$uniques.bed$score <- 0
 	    GeneObject$Junctions$uniques.bed$JunctionType <- 1
-      circFigure_template1(GeneObject = GeneObject,chrom = chrom,chromstart=chromstart, chromend=chromend,
-                           JunctionOption=JunctionOption, currentGeneSymbol=currentGeneSymbol )
+      #circFigure_template1(GeneObject = GeneObject,
+	    circFigure_plotGardener(GeneObject = GeneObject,
+                           chrom = chrom,chromstart=chromstart, 
+                           chromend=chromend,
+                           JunctionOption=JunctionOption, 
+                           currentGeneSymbol=currentGeneSymbol )
 
 	  }
-	  if (length(GeneObject$Transcript_Canonical_juncs) != 7 )
-	  { plotGenes(GeneObject$Transcript, chrom, chromstart, chromend, maxrows=50,height=0.4,plotgenetype="box")	}
+
+	  # 
+#	  if (length(GeneObject$Transcript_Canonical_juncs) != 7 )
+#	  { plotGenes(GeneObject$Transcript, chrom, chromstart, chromend, maxrows=50,height=0.4,plotgenetype="box")	}
 
 	  } # if (length(GeneObject$Junctions) == 1)
 }
@@ -449,8 +540,33 @@ Draw_Transcript_Exons<-function(GeneObject, JunctionOption, Zoom_coords, GenomeD
 ##  Note I think I have doubled up on GeneList and the gene transcript present in GeneObject. LEaving for now.. it works
 Gene_Transcript_Features <- function (GeneList, Gene_Symbol, GeneObject)
 {
-  a <- select(GeneList$Annotation_Library, keys = Gene_Symbol, columns=c("ENTREZID", "SYMBOL"),keytype="SYMBOL")
-  b <- select(GeneList$transcript_reference, keys = a$ENTREZID, columns=c('GENEID', 'TXNAME', 'EXONRANK'),keytype="GENEID")
+#  a <- select(GeneList$Annotation_Library, keys = Gene_Symbol, columns=c("ENTREZID", "SYMBOL"),keytype="SYMBOL")
+#  b <- select(GeneList$transcript_reference, keys = a$ENTREZID, columns=c('GENEID', 'TXNAME', 'EXONRANK'),keytype="GENEID")
+
+# Following code provided by Wong-Ziyi  
+  test0 <- gsubfn::strapplyc(as.character(Gene_Symbol),pattern="^(ENS[[:alpha:]]*).*")
+  test <- gsubfn::strapplyc(as.character(Gene_Symbol),pattern=paste0("^",test0[[1]],"([-0-9]+)"))
+  if (length(test[[1]]) > 0)  # Ensembl ID
+  {
+    ensembl_gene <- paste(test0[[1]],test[[1]],sep="")
+    a <- select(GeneList$Annotation_Library, keys = Gene_Symbol, columns=c("ENTREZID", "SYMBOL", "ENSEMBL"),keytype="ENSEMBL")
+    if("EXONRANK"%in%keytypes(GeneList$transcript_reference)){
+      b <- select(GeneList$transcript_reference, keys = a$ENSEMBL, columns=c('GENEID', 'TXNAME'),keytype="GENEID")
+    }else{
+      b <- select(GeneList$transcript_reference, keys = a$ENSEMBL, columns=c('GENEID', 'TXNAME', 'EXONRANK'),keytype="GENEID")
+    }
+  }
+  else
+  {
+    a <- select(GeneList$Annotation_Library, keys = Gene_Symbol, columns=c("ENTREZID", "SYMBOL"),keytype="SYMBOL")
+    if("EXONRANK"%in%keytypes(GeneList$transcript_reference)){
+      b <- select(GeneList$transcript_reference, keys = a$ENTREZID, columns=c('GENEID', 'TXNAME'),keytype="GENEID")
+    }else{
+      b <- select(GeneList$transcript_reference, keys = a$ENTREZID, columns=c('GENEID', 'TXNAME', 'EXONRANK'),keytype="GENEID")
+    }
+  }
+# End of code provided by Wong-ziyi  
+  
   Num_Transcripts <- length(unique(b$TXNAME))
   Num_Exons_Per_Transcript <- {}
   for(i in 1:length(unique(b$TXNAME)))
@@ -1335,7 +1451,8 @@ ensembl_to_geneName <- function(ensembl_IDs, input)
 
   # Ensure incoming list has correct format (i.e. sometimes have ENSG000001234.11).
   # In this situation the .11 needs to be removed.
-  ensembl_IDs <- gsubfn::strapplyc(as.character(ensembl_IDs),"^ENSG[0-9]+")
+#  ensembl_IDs <- gsubfn::strapplyc(as.character(ensembl_IDs),"^ENSG[0-9]+")
+  ensembl_IDs <- gsubfn::strapplyc(as.character(ensembl_IDs),"^ENS[0-9]+")
   ensembl_IDs <- lapply(ensembl_IDs,FUN = function(x){if (length(x)==0) x='Novel'; return(x)})
   ensembl_IDs <- unlist(ensembl_IDs)
 
@@ -2600,7 +2717,7 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	    #write.csv(Ularcirc_data$CanonicalJunctionCountTable,filename)
 	    pdf(filename)
 	    circs <- circRNA_Subset()
-	    if (is.null(circs))  # This will return NULL if no gene model database is loaded
+	    if (is.null(circs))  # return NULL if no gene model database is loaded
 	    { return (NULL) }
 
 	    layout(matrix(c(#1,1,1,
@@ -2613,8 +2730,10 @@ withProgress(message="Fixing blank BSJ : ", value=0, {
 	    par(mar=c(3,4,1,1))
 	    Zoom_coords <- View_Gene_At_Coords()
 	    DTE <- Draw_Transcript_Exons(circs, JunctionOption(), Zoom_coords,
-	                                 Junction_highlight=list(BSjunc=Ularcirc_data$Current_Selected_BS_Junction, Canonical = Ularcirc_data$SelectedCanonical),
-	                                 currentGeneSymbol=Ularcirc_data$Current_SelectedGene)
+	                           Junction_highlight=list(
+	                           BSjunc=Ularcirc_data$Current_Selected_BS_Junction, 
+	                           Canonical = Ularcirc_data$SelectedCanonical),
+	                           currentGeneSymbol=Ularcirc_data$Current_SelectedGene)
 	    dev.off()
 	  }
 	)

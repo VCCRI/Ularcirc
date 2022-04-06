@@ -1,7 +1,7 @@
 library(shiny)
 library(shinydashboard)
 library(shinyjs)
-library(Sushi)
+#library(Sushi)
 library(data.table)
 library(shinyFiles)
 library(DT)
@@ -17,8 +17,8 @@ List_Saved_Projects<-function()
 {
   # list all RData files
   extdata_path <- as.character(DataPath())  # function from Global.R
-  ProjectNames <- list.files(path= extdata_path,pattern = "*.RData",recursive = FALSE)
-  return(gsub(pattern = ".RData", x=ProjectNames, replacement = ""))
+  ProjectNames <- list.files(path= extdata_path,pattern = ".*?.RData$",recursive = FALSE)
+  return(gsub(pattern = "*.RData", x=ProjectNames, replacement = ""))
 }
 
 # Define UI for dataset viewer application
@@ -293,7 +293,7 @@ shinyUI(
 				      selectInput("GeneListDisplay", NULL, choices = NULL),
 				      actionButton(inputId = "Update_Gene_of_Interest",label = "Select Gene"),
 					   # uiOutput("DisplayDataSetButtons"),  # To display Ularcirc | circExplorer or other input data sets
-					    plotOutput("plotFSJ_BSJ_GeneModel"),
+					    plotOutput("plotFSJ_BSJ_GeneModel",height = "500px"),
 					   downloadButton('download_FSJ_BSJ_GeneModel_PDF','PDF' ),
 
 					    conditionalPanel(condition = "input.ShowTranscriptTable == true ",

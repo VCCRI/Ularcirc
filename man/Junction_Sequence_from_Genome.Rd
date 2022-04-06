@@ -6,6 +6,11 @@
 \usage{
 Junction_Sequence_from_Genome(SelectUniqueJunct_Value, GeneList)
 }
+\arguments{
+\item{GeneList}{: GeneList}
+
+\item{SelectUniqueJunct_value}{: a dataframe with columns names startDonor, strandDonor, startAcceptor}
+}
 \description{
 This function extracts genomic sequence that is likely to capture BSJ. Function does not cross
  validate to gene models.

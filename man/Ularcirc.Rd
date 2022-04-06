@@ -18,7 +18,7 @@ Please refer to the Ularcirc vignette for a more detailed workflow.
 # through your internet browser
 
 library("Ularcirc")
-\donttest{ Ularcirc() }
+\dontrun{ Ularcirc() }
 
 
 }

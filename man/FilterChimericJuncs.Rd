@@ -2,7 +2,7 @@
 % Please edit documentation in R/file_io.R
 \name{FilterChimericJuncs}
 \alias{FilterChimericJuncs}
-\title{FilterChimeric}
+\title{FilterChimericJuncs}
 \usage{
 FilterChimericJuncs(
   All_junctions,
@@ -37,6 +37,13 @@ if ChromFilter is TRUE and StrandFilter is TRUE}
 A generic function that filters STAR chimeric junction files on certain genomic criteria (eg strand, same chromosome etc).
 Useful filter to remove the most obvious false positives. The default filter settings are suitable for circRNA
  discovery in humans / mice data sets.
+}
+\examples{
+extdata_path <- system.file("extdata",package = "Ularcirc")
+chimeric.file <- paste0(extdata_path,"/SRR444655_subset.Chimeric.out.junction.gz")
+chimericsDT <- Ularcirc::loadSTAR_chimeric(chimeric.file,returnColIdx = 1:14)
+chimericsDT$filtered <- Ularcirc::FilterChimericJuncs(chimericsDT$data_set, canonicalJuncs = TRUE)
+
 }
 \seealso{
 SelectUniqueJunctions, loadSTAR_chimeric
